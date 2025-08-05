@@ -8,18 +8,21 @@ from rest_framework import status, permissions
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.http import JsonResponse
-from .models import User
 from .serializers import UserRegisterSerializer, UserSerializer
 
 
 class RegisterView(APIView):
     permission_classes = (AllowAny,)
+
     def post(self, request):
         serializer = UserRegisterSerializer(data=request.data)
+
         if serializer.is_valid():
             serializer.save()
-            data = request.data
-            user = authenticate(email=data['email'], password=data['password'])
+            user = authenticate(
+                email=request.data['email'],
+                password=request.data['password']
+            )
             if user is None:
                 return Response({"error": "Invalid credentials"}, status=401)
 
@@ -38,8 +41,10 @@ class RegisterView(APIView):
                 samesite='Lax'
             )
             return response
-        return Response(serializer.errors, status=400)
 
+        return Response({
+            "errors": serializer.errors
+        }, status=400)
 class LoginView(APIView):
     permission_classes = (AllowAny,)
     def post(self, request):
