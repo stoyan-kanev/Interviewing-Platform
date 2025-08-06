@@ -1,6 +1,7 @@
-<nav *ngIf="(currentUser$ | async) as user">
-    Добре дошъл, {{ user.full_name }}
-</nav>
-<nav *ngIf="!(currentUser$ | async)">
+@if (currentUser$ | async) {
+    <a (click)="logout()" style="cursor: pointer;">Logout</a>
+
+} @else {
     <a routerLink="/login">Login</a>
-</nav>
+    <a routerLink="/register">Register</a>
+}

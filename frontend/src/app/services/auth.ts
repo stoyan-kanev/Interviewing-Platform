@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {HttpClient, HttpHeaders} from '@angular/common/http';
-import {map, Observable, switchMap, tap} from 'rxjs';
+import {BehaviorSubject, map, Observable, switchMap, tap} from 'rxjs';
 import {User} from './user.interface';
 
 
@@ -8,13 +8,16 @@ import {User} from './user.interface';
 @Injectable({providedIn: 'root'})
 export class AuthService {
     private apiUrl = 'http://localhost:8000/auth/';
-    private currentUser: User | null = null;
+    private currentUserSubject = new BehaviorSubject<User | null>(null);
+    public currentUser$ = this.currentUserSubject.asObservable();
 
     constructor(private http: HttpClient) {
     }
 
     login(email: string, password: string): Observable<any> {
-        return this.http.post(`${this.apiUrl}login/`, {email, password}, {withCredentials: true});
+        return this.http.post(`${this.apiUrl}login/`, {email, password}, {withCredentials: true}).pipe(
+            switchMap(() => this.getCurrentUser())
+        );
     }
 
     register(email: string, full_name: string, password: string): Observable<User> {
@@ -28,7 +31,13 @@ export class AuthService {
 
 
     logout(): Observable<any> {
-        return this.http.post(`${this.apiUrl}logout/`, {}, {withCredentials: true});
+        return this.http.post(`${this.apiUrl}logout/`, {}, { withCredentials: true }).pipe(
+            tap(() => {
+                this.currentUserSubject.next(null)
+                localStorage.removeItem('user');
+
+            })
+        );
     }
 
     refresh(): Observable<any> {
@@ -37,25 +46,10 @@ export class AuthService {
 
     getCurrentUser(): Observable<User> {
         return this.http.get<User>(`${this.apiUrl}me/`, {withCredentials: true}).pipe(
-            tap(user => this.currentUser = user)
+            tap(user => this.currentUserSubject.next(user))
         );
     }
-
-    isLoggedIn(): boolean {
-        return this.currentUser !== null;
-    }
-
     getUser(): User | null {
-        return this.currentUser;
+        return this.currentUserSubject.value;
     }
-    validateSession(): void {
-        this.getCurrentUser().subscribe({
-            next: (user) => this.currentUser = user,
-            error: (err) => {
-                console.warn('Сесията е невалидна:', err);
-                this.currentUser = null;
-            }
-        });
-    }
-
 }

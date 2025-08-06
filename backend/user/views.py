@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.conf import settings
 from django.utils.timezone import now
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
@@ -71,13 +72,27 @@ class LoginView(APIView):
         return response
 
 
+
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
+
     def post(self, request):
-        response = JsonResponse({"message": "Logged out"})
-        response.delete_cookie('access_token')
-        response.delete_cookie('refresh_token')
-        return response
+        try:
+            refresh_token = request.COOKIES.get("refresh_token")
+            if not refresh_token:
+                return Response({"error": "Refresh token is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+
+
+            response = Response({"message": "Logout successful"}, status=205)
+
+            response.delete_cookie("access_token", path="/")
+            response.delete_cookie("refresh_token", path="/")
+            return response
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class RefreshAccessTokenView(APIView):
 

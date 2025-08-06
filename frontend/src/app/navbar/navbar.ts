@@ -14,22 +14,29 @@ import {Router, RouterLink} from '@angular/router';
     styleUrl: './navbar.css'
 })
 export class NavbarComponent {
-    currentUser: User | undefined;
+    currentUser$: Observable<User | null> | undefined;
 
     constructor(private authService: AuthService, private router: Router) {
     }
 
     ngOnInit() {
+        this.currentUser$ = this.authService.currentUser$
+
         this.authService.getCurrentUser().subscribe({
-            next: user => this.currentUser = user,
+            next: () => {},
             error: err => {
                 if (err.status === 401) {
-                    console.log('Невалиден токен, logout...');
                     this.authService.logout().subscribe(() => {
                         this.router.navigate(['/login']);
                     });
                 }
             }
+        });
+    }
+
+    logout(): void {
+        this.authService.logout().subscribe(() => {
+            this.router.navigate(['/login']);
         });
     }
 
