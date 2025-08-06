@@ -1,16 +1,13 @@
 import {Injectable} from '@angular/core';
 import {HttpClient, HttpHeaders} from '@angular/common/http';
 import {map, Observable, switchMap, tap} from 'rxjs';
+import {User} from './user.interface';
 
-interface User {
-    id: number;
-    email: string;
-    full_name: string;
-}
+
 
 @Injectable({providedIn: 'root'})
 export class AuthService {
-    private apiUrl = 'http://127.0.0.1:8000/auth/';
+    private apiUrl = 'http://localhost:8000/auth/';
     private currentUser: User | null = null;
 
     constructor(private http: HttpClient) {
@@ -35,7 +32,7 @@ export class AuthService {
     }
 
     refresh(): Observable<any> {
-        return this.http.post(`${this.apiUrl}refresh–token/`, {}, {withCredentials: true});
+        return this.http.post(`${this.apiUrl}refresh-token/`, {}, {withCredentials: true});
     }
 
     getCurrentUser(): Observable<User> {
@@ -51,4 +48,14 @@ export class AuthService {
     getUser(): User | null {
         return this.currentUser;
     }
+    validateSession(): void {
+        this.getCurrentUser().subscribe({
+            next: (user) => this.currentUser = user,
+            error: (err) => {
+                console.warn('Сесията е невалидна:', err);
+                this.currentUser = null;
+            }
+        });
+    }
+
 }

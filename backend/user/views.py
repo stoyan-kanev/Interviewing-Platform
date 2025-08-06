@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from django.contrib.auth import authenticate
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.http import JsonResponse
 from .serializers import UserRegisterSerializer, UserSerializer
@@ -106,9 +107,14 @@ class RefreshAccessTokenView(APIView):
             response = Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             response.delete_cookie("access_token")
             return response
+
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        serializer = UserSerializer(request.user)
-        return Response(serializer.data)
+        user = request.user
+        return Response({
+            'id': user.id,
+            'email': user.email,
+            'full_name': user.full_name,
+        })

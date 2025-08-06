@@ -1,1 +1,6 @@
-<p>navbar works!</p>
+<nav *ngIf="(currentUser$ | async) as user">
+    Добре дошъл, {{ user.full_name }}
+</nav>
+<nav *ngIf="!(currentUser$ | async)">
+    <a routerLink="/login">Login</a>
+</nav>
