@@ -1,7 +1,15 @@
-@if (currentUser$ | async) {
-    <a (click)="logout()" style="cursor: pointer;">Logout</a>
+<nav class="bg-gray-900 text-white px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center space-x-6">
+        <a routerLink="/" class="hover:text-blue-400 transition">Home</a>
+        <a routerLink="/about" class="hover:text-blue-400 transition">About</a>
+    </div>
 
-} @else {
-    <a routerLink="/login">Login</a>
-    <a routerLink="/register">Register</a>
-}
+    <div class="flex items-center space-x-6">
+        @if (currentUser$ | async) {
+            <a (click)="logout()" style="cursor: pointer;" class="hover:text-red-400 transition">Logout</a>
+        } @else {
+            <a routerLink="/login" class="hover:text-blue-400 transition">Login</a>
+            <a routerLink="/register" class="hover:text-blue-400 transition">Register</a>
+        }
+    </div>
+</nav>
