@@ -50,10 +50,7 @@ export class RegisterComponent {
 
 
     onSubmit() {
-        console.log('Submitted');
-        console.log('Form valid:', this.registerForm.valid);
-        console.log(this.registerForm.value);
-        console.log('Password errors:', this.password.errors);
+
 
         if (!this.registerForm.valid) {
             this.registerForm.markAllAsTouched();
