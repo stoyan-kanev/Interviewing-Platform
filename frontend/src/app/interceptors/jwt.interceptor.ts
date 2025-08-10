@@ -22,7 +22,7 @@ export const jwtInterceptor: HttpInterceptorFn = (
 
     return next(withCredsReq).pipe(
         catchError((error) => {
-            if (error.status === 401 && !req.url.includes('/refresh_token')) {
+            if (error.status === 401 && !req.url.includes('/refresh-token')) {
                 return authService.refresh().pipe(
                     switchMap(() => {
                         return next(req.clone({withCredentials: true}));

@@ -1,6 +1,8 @@
 from datetime import timedelta
 from pathlib import Path
 import os
+
+from corsheaders.defaults import default_headers
 from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -84,7 +86,9 @@ CORS_ALLOW_CREDENTIALS = True
 CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SAMESITE = "Lax"
-
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "x-no-interceptor",
+]
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (

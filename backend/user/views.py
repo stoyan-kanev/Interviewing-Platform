@@ -95,7 +95,6 @@ class LogoutView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class RefreshAccessTokenView(APIView):
-
     permission_classes = [AllowAny]
 
     def post(self, request):
