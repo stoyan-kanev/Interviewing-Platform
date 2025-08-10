@@ -6,6 +6,11 @@
             <h2 class="text-3xl font-bold">Create an Account</h2>
             <p class="text-gray-400 text-sm mt-1">Join us and start your journey</p>
         </div>
+        @if (errorMessage) {
+            <p class="error">
+                {{errorMessage}}
+            </p>
+        }
 
         <div>
             <label for="email" class="block mb-1 text-sm font-medium text-gray-300">Email</label>
@@ -24,7 +29,7 @@
 
         </div>
         <div>
-            <label for="full_name" class="block mb-1 text-sm font-medium text-gray-300">Email</label>
+            <label for="full_name" class="block mb-1 text-sm font-medium text-gray-300">Full Name</label>
             <input
                 type="text"
                 formControlName="full_name"

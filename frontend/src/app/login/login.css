@@ -2,3 +2,6 @@
     color:red;
     text-align: center;
 }
+button:hover{
+    cursor: pointer;
+}

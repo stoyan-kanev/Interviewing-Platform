@@ -1,6 +1,9 @@
 <nav class="bg-gray-900 text-white px-6 py-3 flex items-center justify-between">
     <div class="flex items-center space-x-6">
-        <a routerLink="/" class="hover:text-blue-400 transition">Home</a>
+        @if (currentUser$ | async){
+            <a routerLink="/dashboard" class="hover:text-blue-400 transition">Dashboard</a>
+
+        }
         <a routerLink="/about" class="hover:text-blue-400 transition">About</a>
     </div>
 
