@@ -51,6 +51,12 @@ export class RegisterComponent {
 
     onSubmit() {
 
+        if (this.email){
+            this.errorMessage = 'Please enter a valid email';
+        }
+        if (this.fullName){
+            this.errorMessage = 'Please enter full name';
+        }
 
         if (!this.registerForm.valid) {
             this.registerForm.markAllAsTouched();
