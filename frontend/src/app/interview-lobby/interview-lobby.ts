@@ -15,7 +15,7 @@ export class InterviewLobbyComponent implements OnInit {
     roomId!: string;
     roomName = '';
     candidateName = '';
-
+    errorMessage = ''
     constructor(
         private route: ActivatedRoute,
         private http: HttpClient,
@@ -28,17 +28,18 @@ export class InterviewLobbyComponent implements OnInit {
             .get<any>(`http://localhost:8000/interview-rooms/public/${this.roomId}/`)
             .subscribe({
                 next: (data) => (this.roomName = data.name),
-                error: () => alert('Room not found!'),
+                error: () => this.errorMessage= 'Room not found!',
             });
     }
 
     joinInterview(): void {
         if (!this.candidateName.trim()) {
-            alert('Please enter your name.');
+            this.errorMessage = 'Please enter a valid candidate name!';
             return;
         }
 
         localStorage.setItem('candidate_name', this.candidateName.trim());
         this.router.navigate(['/live', this.roomId]);
     }
+
 }
