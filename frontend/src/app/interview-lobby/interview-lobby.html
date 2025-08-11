@@ -1,0 +1,11 @@
+<div class="lobby-container">
+    <h2>Интервю: {{ roomName }}</h2>
+
+    <input
+        type="text"
+        placeholder="Въведете име"
+        [(ngModel)]="candidateName"
+    />
+
+    <button (click)="joinInterview()">Влез в интервюто</button>
+</div>
