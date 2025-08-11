@@ -28,7 +28,7 @@ export class InterviewLobbyComponent implements OnInit {
             .get<any>(`http://localhost:8000/interview-rooms/public/${this.roomId}/`)
             .subscribe({
                 next: (data) => (this.roomName = data.name),
-                error: () => this.errorMessage= 'Room not found!',
+                error: () => this.router.navigate(['/']),
             });
     }
 
