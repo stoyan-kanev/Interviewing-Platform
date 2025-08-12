@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from interview_rooms.models import Room
-from interview_rooms.serializers import InterviewRoomSerializer
+from interview_rooms.serializers import InterviewRoomSerializer, PublicInterviewRoomSerializer
 
 
 # Create your views here.
@@ -54,5 +54,5 @@ class InterviewRoomPublicAccess(APIView):
 
     def get(self, request, room_id):
         room = get_object_or_404(Room, room_id=room_id)
-        serializer = InterviewRoomSerializer(room)
+        serializer = PublicInterviewRoomSerializer(room)
         return Response(serializer.data, status=status.HTTP_200_OK)
