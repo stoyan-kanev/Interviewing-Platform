@@ -1,5 +1,33 @@
-<div class="live-interview-container">
-    <h2>Добре дошъл, {{ candidateName }}</h2>
-    <p>Room ID: {{ roomId }}</p>
+<div class="video-wrapper">
+    <div class="videos">
+        <div class="my-cam-warper">
+            <video #localVideo autoplay muted playsinline></video>
+            <div class="participant-name">{{ candidateName }} (Вие)</div>
+            <div class="status-indicator">
+                🟢 Онлайн
+                @if (!micEnabled) {
+                    <span>🔇 Без звук</span>
 
+                }
+            </div>
+            <div class="controls">
+                <button (click)="toggleMic()">
+                    <i class="fas" [ngClass]="micEnabled ? 'fa-microphone' : 'fa-microphone-slash'"></i>
+                </button>
+                <button (click)="toggleCamera()">
+                    <i class="fas" [ngClass]="cameraEnabled ? 'fa-video' : 'fa-video-slash'"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="remote-cam">
+            <video #remoteVideo autoplay playsinline></video>
+            <div class="participant-name">Събеседник</div>
+            <div class="status-indicator">🟢 Онлайн</div>
+        </div>
+    </div>
+
+    <div class="leave-call">
+        <button (click)="leaveCall()">⛔ Напусни срещата</button>
+    </div>
 </div>
