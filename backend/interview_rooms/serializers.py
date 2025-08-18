@@ -12,4 +12,4 @@ class InterviewRoomSerializer(serializers.ModelSerializer):
 class PublicInterviewRoomSerializer(serializers.ModelSerializer):
     class Meta:
         model = Room
-        fields = ['room_id', 'name', 'created_at']
+        fields = ['room_id', 'name', 'created_at','owner']

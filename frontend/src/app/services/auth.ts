@@ -18,7 +18,7 @@ function isUser(u: User | null): u is User {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-    private apiUrl = 'http://localhost:8000/auth/';
+    private apiUrl = 'http://10.70.71.111:8000/auth/';
     private currentUserSubject = new BehaviorSubject<User | null>(null);
     public currentUser$ = this.currentUserSubject.asObservable();
 
