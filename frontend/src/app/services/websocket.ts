@@ -7,9 +7,12 @@ export class WebSocketService {
     private socket!: Socket;
 
     connect(): void {
-        this.socket = io('http://10.70.71.111:8001');
+        const SERVER_URL = this.getServerUrl();
+
+        this.socket = io(SERVER_URL);
         this.socket.on('connect', () => {
             console.log('✅ Connected to WebSocket server, socket ID:', this.socket.id);
+            console.log('🌐 Server URL:', SERVER_URL);
         });
 
         this.socket.on('disconnect', () => {
@@ -18,7 +21,18 @@ export class WebSocketService {
 
         this.socket.on('connect_error', (error) => {
             console.error('🚫 Connection error:', error);
+            console.error('🌐 Tried to connect to:', SERVER_URL);
         });
+    }
+
+    private getServerUrl(): string {
+        const hostname = window.location.hostname;
+
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            return 'http://localhost:8001';
+        }
+
+        return `http://${hostname}:8001`;
     }
 
     disconnect(): void {
@@ -28,11 +42,7 @@ export class WebSocketService {
         }
     }
 
-    sendNeedRenegotiate(roomId: string) {
-        console.log('🔄 Requesting renegotiation for room:', roomId);
-        this.socket.emit('needRenegotiate', { roomId });
-    }
-
+    // Room management
     joinRoom(roomId: string, role: 'host' | 'guest') {
         console.log('🚪 Joining room:', roomId, 'as:', role);
         this.socket.emit('joinRoom', { roomId, role });
@@ -52,6 +62,12 @@ export class WebSocketService {
         this.socket.emit('ready', { roomId, role });
     }
 
+    // Negotiation management
+    sendNeedRenegotiate(roomId: string) {
+        console.log('🔄 Requesting renegotiation for room:', roomId);
+        this.socket.emit('needRenegotiate', { roomId });
+    }
+
     onStartNegotiation(): Observable<void> {
         return new Observable<void>(observer => {
             this.socket.on('startNegotiation', () => {
@@ -61,6 +77,22 @@ export class WebSocketService {
         });
     }
 
+    // НОВИ events за connection management
+    onResetConnection(): Observable<void> {
+        return new Observable<void>(observer => {
+            this.socket.on('resetConnection', () => {
+                console.log('🔄 Reset connection signal received');
+                observer.next();
+            });
+        });
+    }
+
+    sendConnectionEstablished(roomId: string) {
+        console.log('🎉 Sending connection established for room:', roomId);
+        this.socket.emit('connectionEstablished', { roomId });
+    }
+
+    // User events
     onUserJoined(): Observable<any> {
         return new Observable((observer) => {
             this.socket.on('userJoined', (data: any) => {
@@ -93,6 +125,7 @@ export class WebSocketService {
         this.socket.emit('userJoined', roomId);
     }
 
+    // WebRTC signaling
     sendOffer(roomId: string, offer: RTCSessionDescriptionInit): void {
         console.log('📤 Sending offer to room:', roomId, offer);
         this.socket.emit('offer', { roomId, offer });
@@ -135,6 +168,7 @@ export class WebSocketService {
         });
     }
 
+    // Debug helpers
     sendDebugRooms(): void {
         this.socket.emit('debugRooms');
     }

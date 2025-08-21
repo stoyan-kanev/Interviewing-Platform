@@ -8,8 +8,10 @@
 <!--        <div>ICE: {{debugInfo.iceConnectionState}}</div>-->
 <!--        <button (click)="showDebugInfo()">Log State</button>-->
 <!--    </div>-->
+
     <div class="videos">
         <!-- HOST VIEW -->
+
         <ng-container *ngIf="role === 'host'; else guestTemplate">
             <div class="my-cam-warper">
                 <video #localVideo autoplay muted playsinline></video>

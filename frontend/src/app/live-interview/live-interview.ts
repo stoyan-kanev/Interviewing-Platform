@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, AfterViewInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, AfterViewInit, ViewChild, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { WebSocketService } from '../services/websocket';
 import { NgClass, NgIf } from '@angular/common';
@@ -10,7 +10,7 @@ import { NgClass, NgIf } from '@angular/common';
     standalone: true,
     imports: [NgClass, NgIf],
 })
-export class LiveInterviewComponent implements OnInit, AfterViewInit {
+export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy {
     @ViewChild('localVideo') localVideoRef!: ElementRef<HTMLVideoElement>;
     @ViewChild('remoteVideo') remoteVideoRef!: ElementRef<HTMLVideoElement>;
 
@@ -23,6 +23,7 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
 
     showUnmuteCTA = false;
 
+    // Debug info
     debugInfo = {
         localTracks: 0,
         remoteTracks: 0,
@@ -31,14 +32,15 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
         signalingState: 'stable'
     };
 
+    // Negotiation guards
     private canNegotiate = false;
     private makingOffer = false;
     private polite = false;
     private lastOfferAt = 0;
     private static readonly OFFER_COOLDOWN_MS = 1500;
 
+    // WebRTC
     private peer!: RTCPeerConnection;
-
     private localStream: MediaStream = new MediaStream();
     private remoteStream!: MediaStream;
     private roomId!: string;
@@ -46,9 +48,14 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
     private pendingIce: RTCIceCandidateInit[] = [];
     private remoteDescSet = false;
 
-    private localTracksAttached = false;
-    private renegotiateRequested = false;
+    // State flags
+    private mediaInitialized = false;
+    private peerConnectionReady = false;
+    private negotiationPending = false;
+    private connectionEstablished = false;
+    private isDestroyed = false;
 
+    // Orchestration promises
     private viewReady!: Promise<void>;
     private resolveViewReady!: () => void;
 
@@ -57,8 +64,6 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
 
     private mediaReady!: Promise<void>;
     private resolveMediaReady!: () => void;
-
-    private initialNegotiationDone = false;
 
     constructor(
         private route: ActivatedRoute,
@@ -97,20 +102,29 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
             this.resolveRoleReady();
         });
 
+        // Listen for other users joining
         this.ws.onUserJoined().subscribe((data: any) => {
             console.log('👋 User joined:', data);
+            setTimeout(() => {
+                this.attemptNegotiation();
+            }, 1000);
+        });
+
+        // НОВО: Listen за reset connection signal
+        this.ws.onResetConnection().subscribe(() => {
+            console.log('🔄 Reset connection signal received');
+            this.resetConnection();
         });
 
         this.ws.joinRoom(this.roomId, desiredRole);
 
+        // Централен оркестратор
         await this.viewReady;
         await this.roleReady;
         await this.initCamera();
 
         this.createPeerConnection();
         this.setupWebSocketListeners();
-
-        await this.ensureLocalTracksAttached();
 
         console.log('✅ Sending ready signal as:', this.isHost ? 'host' : 'guest');
         this.ws.sendReady(this.roomId, this.isHost ? 'host' : 'guest');
@@ -121,8 +135,49 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
         console.log('👁️ View ready');
     }
 
+    ngOnDestroy(): void {
+        this.isDestroyed = true;
+        this.cleanup();
+    }
+
+    private cleanup(): void {
+        console.log('🧹 Cleaning up component');
+
+        if (this.peer) {
+            this.peer.close();
+        }
+
+        if (this.localStream) {
+            this.localStream.getTracks().forEach(track => track.stop());
+        }
+
+        this.ws.disconnect();
+    }
+
+    // НОВA функция за reset на connection
+    private resetConnection(): void {
+        console.log('🔄 Resetting WebRTC connection');
+
+        this.canNegotiate = false;
+        this.connectionEstablished = false;
+        this.remoteDescSet = false;
+        this.pendingIce = [];
+
+        if (this.peer) {
+            this.peer.close();
+        }
+
+        // Създаваме нова connection
+        setTimeout(() => {
+            if (!this.isDestroyed) {
+                this.createPeerConnection();
+                this.addLocalTracksWhenReady();
+            }
+        }, 500);
+    }
+
     private async fetchRoom(roomUuid: string): Promise<any> {
-        const res = await fetch(`http://10.70.71.111:8000/interview-rooms/public/${roomUuid}/`, {
+        const res = await fetch(`http://10.70.71.104:8000/interview-rooms/public/${roomUuid}/`, {
             credentials: 'include',
         });
         if (!res.ok) throw new Error('room not ok');
@@ -130,7 +185,7 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
     }
 
     private async fetchMeOrNull(): Promise<any | null> {
-        const res = await fetch('http://10.70.71.111:8000/auth/me/', { credentials: 'include' });
+        const res = await fetch('http://10.70.71.104:8000/auth/me/', { credentials: 'include' });
         if (!res.ok) return null;
         return await res.json();
     }
@@ -157,6 +212,7 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
             lv.playsInline = true;
             setTimeout(() => lv.play().catch(console.error), 0);
 
+            this.mediaInitialized = true;
             this.updateDebugInfo();
             this.resolveMediaReady?.();
         } catch (err) {
@@ -168,6 +224,7 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
             lv.autoplay = true;
             lv.playsInline = true;
             setTimeout(() => lv.play().catch(console.error), 0);
+            this.mediaInitialized = true;
             this.resolveMediaReady?.();
         }
     }
@@ -181,8 +238,7 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
 
         console.log('🔗 Peer connection created');
 
-        this.addLocalTracksImmediate();
-
+        // Remote video setup
         this.remoteStream = new MediaStream();
         const rv = this.remoteVideoRef.nativeElement;
         rv.srcObject = this.remoteStream;
@@ -215,8 +271,6 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
             const rv = this.remoteVideoRef.nativeElement;
             rv.srcObject = this.remoteStream;
             setTimeout(() => rv.play().catch(console.error), 100);
-
-            this.handleRemoteTrackAdded();
         };
 
         this.peer.onicecandidate = (e) => {
@@ -226,11 +280,9 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
             }
         };
 
-        this.peer.onnegotiationneeded = async () => {
-            console.log('🛎️ onnegotiationneeded fired, canNegotiate:', this.canNegotiate);
-            if (this.canNegotiate && this.isHost && !this.makingOffer) {
-                await this.createAndSendOffer();
-            }
+        this.peer.onnegotiationneeded = () => {
+            console.log('🛎️ onnegotiationneeded fired - scheduling negotiation');
+            this.scheduleNegotiation();
         };
 
         this.peer.onconnectionstatechange = () => {
@@ -238,10 +290,19 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
             console.log('🧭 connectionState changed to:', st);
             this.debugInfo.connectionState = st;
 
-            if (st === 'connected') {
-                this.initialNegotiationDone = true;
+            if (st === 'connected' && !this.connectionEstablished) {
+                this.connectionEstablished = true;
                 console.log('🎉 WebRTC connection established!');
+                this.ws.sendConnectionEstablished(this.roomId);
                 this.logPeerConnectionState();
+            } else if (st === 'disconnected' || st === 'failed') {
+                console.log('❌ Connection lost, attempting reset');
+                this.connectionEstablished = false;
+                setTimeout(() => {
+                    if (!this.isDestroyed) {
+                        this.resetConnection();
+                    }
+                }, 2000);
             }
         };
 
@@ -258,15 +319,27 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
         this.peer.onicegatheringstatechange = () => {
             console.log('📦 iceGatheringState:', this.peer.iceGatheringState);
         };
+
+        this.peerConnectionReady = true;
+        console.log('✅ Peer connection fully ready');
+
+        // Добавяме tracks СЛЕД като всичко е готово
+        this.addLocalTracksWhenReady();
     }
 
-    private addLocalTracksImmediate(): void {
-        if (!this.localStream) return;
+    private async addLocalTracksWhenReady(): Promise<void> {
+        await this.mediaReady;
+
+        if (!this.mediaInitialized || !this.peerConnectionReady || !this.peer) {
+            console.log('⏳ Waiting for media or peer connection...');
+            setTimeout(() => this.addLocalTracksWhenReady(), 100);
+            return;
+        }
 
         const videoTrack = this.localStream.getVideoTracks()[0];
         const audioTrack = this.localStream.getAudioTracks()[0];
 
-        console.log('🔗 Adding tracks immediately:', {
+        console.log('🔗 Adding tracks when ready:', {
             video: !!videoTrack,
             audio: !!audioTrack,
             videoId: videoTrack?.id,
@@ -283,22 +356,56 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
             console.log('🎙️ Audio track added');
         }
 
-        this.localTracksAttached = true;
+        console.log('✅ All local tracks added, ready for negotiation');
     }
 
-    private async handleRemoteTrackAdded(): Promise<void> {
-        if (this.isHost && !this.initialNegotiationDone && this.canNegotiate) {
-            setTimeout(async () => {
-                if (!this.makingOffer && this.peer.signalingState === 'stable') {
-                    console.log('🔄 Host renegotiating after receiving remote tracks');
-                    await this.createAndSendOffer();
-                }
-            }, 500);
+    private scheduleNegotiation(): void {
+        if (this.negotiationPending) {
+            console.log('⏳ Negotiation already pending');
+            return;
         }
+
+        this.negotiationPending = true;
+
+        setTimeout(() => {
+            this.negotiationPending = false;
+            this.attemptNegotiation();
+        }, 500);
+    }
+
+    private async attemptNegotiation(): Promise<void> {
+        if (!this.peer || this.isDestroyed) {
+            console.log('🚫 No peer connection or component destroyed');
+            return;
+        }
+
+        if (this.connectionEstablished && this.peer.connectionState === 'connected') {
+            console.log('🛑 Already connected, skipping negotiation');
+            return;
+        }
+
+        // ГОСТЪТ изпраща renegotiate request ако не може да negotiation директно
+        if (!this.canNegotiate && !this.isHost) {
+            console.log('🔄 Guest requesting renegotiation from host');
+            this.ws.sendNeedRenegotiate(this.roomId);
+            return;
+        }
+
+        // ХОСТЪТ може да прави offer ако е разрешено
+        if (!this.canNegotiate || !this.isHost || this.makingOffer) {
+            console.log('🚫 Cannot negotiate now:', {
+                canNegotiate: this.canNegotiate,
+                isHost: this.isHost,
+                makingOffer: this.makingOffer
+            });
+            return;
+        }
+
+        await this.createAndSendOffer();
     }
 
     private async createAndSendOffer(): Promise<void> {
-        if (!this.peer || this.makingOffer) return;
+        if (!this.peer || this.makingOffer || this.isDestroyed) return;
 
         const now = Date.now();
         if (now - this.lastOfferAt < LiveInterviewComponent.OFFER_COOLDOWN_MS) {
@@ -332,7 +439,7 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
         this.ws.onStartNegotiation().subscribe(async () => {
             console.log('🚦 startNegotiation received');
 
-            if (this.initialNegotiationDone && this.peer?.connectionState === 'connected') {
+            if (this.connectionEstablished && this.peer?.connectionState === 'connected') {
                 console.log('🛑 startNegotiation ignored: already connected');
                 return;
             }
@@ -340,19 +447,16 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
             this.canNegotiate = true;
             console.log('✅ Can now negotiate');
 
-            if (!this.isHost || !this.peer) {
-                console.log('🚫 Not host or no peer, skipping offer creation');
-                return;
-            }
-
-            await this.createAndSendOffer();
+            setTimeout(() => {
+                this.attemptNegotiation();
+            }, 200);
         });
 
         this.ws.onOffer().subscribe(async (offer) => {
             console.log('📦 Offer received:', offer);
 
-            if (!this.peer) {
-                console.warn('❌ Offer received before peer created');
+            if (!this.peer || this.isDestroyed) {
+                console.warn('❌ Offer received before peer created or after destroy');
                 return;
             }
 
@@ -396,8 +500,8 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
         this.ws.onAnswer().subscribe(async (answer) => {
             console.log('📦 Answer received:', answer);
 
-            if (!this.peer) {
-                console.warn('❌ Answer received before peer created');
+            if (!this.peer || this.isDestroyed) {
+                console.warn('❌ Answer received before peer created or after destroy');
                 return;
             }
 
@@ -406,10 +510,6 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
                 await this.peer.setRemoteDescription(answer);
                 this.remoteDescSet = true;
                 console.log('✅ Remote description set (answer)');
-
-                if (!this.initialNegotiationDone) {
-                    this.initialNegotiationDone = true;
-                }
 
                 // Добавяне на pending ICE candidates
                 console.log('🔄 Processing', this.pendingIce.length, 'pending ICE candidates');
@@ -429,8 +529,8 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
         this.ws.onIceCandidate().subscribe(async (candidate) => {
             console.log('❄️ ICE candidate received:', candidate);
 
-            if (!this.peer) {
-                console.warn('❌ ICE received before peer created');
+            if (!this.peer || this.isDestroyed) {
+                console.warn('❌ ICE received before peer created or after destroy');
                 return;
             }
 
@@ -448,11 +548,6 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
                 console.error('❌ addIceCandidate error', err);
             }
         });
-    }
-
-    private async ensureLocalTracksAttached(): Promise<void> {
-        await this.mediaReady.catch(() => {});
-        console.log('✅ Local tracks already attached');
     }
 
     private updateDebugInfo(): void {
@@ -520,16 +615,22 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
 
     leaveCall(): void {
         console.log('👋 Leaving call...');
-        this.peer?.close();
-        this.localStream?.getTracks().forEach((t) => t.stop());
-        this.ws.disconnect();
+        this.cleanup();
         window.location.href = '/';
+    }
+
+    // Manual retry function за debug
+    manualRetry(): void {
+        console.log('🔄 Manual retry triggered');
+        this.resetConnection();
     }
 
     diagnoseConnection(): void {
         console.log('🔍 Full Connection Diagnosis:');
         console.log('Role:', this.role, 'IsHost:', this.isHost);
         console.log('Room ID:', this.roomId);
+        console.log('Connection established:', this.connectionEstablished);
+        console.log('Can negotiate:', this.canNegotiate);
         console.log('Local stream tracks:', this.localStream?.getTracks().map(t => ({
             kind: t.kind,
             id: t.id,
@@ -549,7 +650,6 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
             console.log('Signaling state:', this.peer.signalingState);
             console.log('ICE gathering state:', this.peer.iceGatheringState);
 
-            // Проверете какво изпращат transceivers
             this.peer.getTransceivers().forEach((transceiver, index) => {
                 console.log(`Transceiver ${index}:`, {
                     direction: transceiver.direction,
@@ -570,6 +670,7 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit {
         }
     }
 
+    // Debug helper
     showDebugInfo(): void {
         console.log('🔍 Debug Info:', this.debugInfo);
         this.logPeerConnectionState();
