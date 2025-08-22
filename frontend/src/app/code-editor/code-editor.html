@@ -1,1 +1,46 @@
-<p>code-editor works!</p>
+<div class="code-editor-container">
+    <div class="editor-header">
+        <div class="editor-controls">
+            <select (change)="changeLanguage($event)" [value]="currentLanguage" class="language-selector">
+                <option value="javascript">JavaScript</option>
+                <option value="typescript">TypeScript</option>
+                <option value="python">Python</option>
+                <option value="java">Java</option>
+                <option value="csharp">C#</option>
+                <option value="cpp">C++</option>
+                <option value="html">HTML</option>
+                <option value="css">CSS</option>
+                <option value="sql">SQL</option>
+                <option value="json">JSON</option>
+            </select>
+
+            <button (click)="runCode()" [disabled]="!canRunCode()" class="run-btn">
+                ▶️ Run Code
+            </button>
+
+
+
+            <button (click)="resetCode()" class="reset-btn">
+                🔄 Reset
+            </button>
+
+            <div class="collaborators">
+                        <span *ngFor="let user of activeUsers" class="user-indicator" [style.background-color]="user.color">
+                            {{ user.name }}
+                        </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="editor-wrapper">
+        <div #editorContainer class="monaco-editor-container"></div>
+
+        <div class="output-panel" [class.visible]="showOutput">
+            <div class="output-header">
+                <span>Output</span>
+                <button (click)="closeOutput()" class="close-output">✕</button>
+            </div>
+            <pre class="output-content" [innerHTML]="formatOutput(outputContent)"></pre>
+        </div>
+    </div>
+</div>

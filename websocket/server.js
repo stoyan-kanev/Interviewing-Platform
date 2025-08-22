@@ -39,23 +39,75 @@ function getLocalIPAddress() {
 
 // Code execution function (simplified - в production използвайте sandbox)
 function executeCode(code, language) {
+    console.log(`🔧 Executing ${language} code:`, code.substring(0, 100) + '...');
+
     try {
         if (language === 'javascript') {
-            // Използваме eval само за demo - НЕ правете това в production!
-            const originalLog = console.log;
+            // Създаваме sandbox environment
+            const originalConsole = console;
             let output = '';
-            console.log = (...args) => {
-                output += args.join(' ') + '\n';
+            let errorOutput = '';
+
+            // Пренасочваме console.log
+            const mockConsole = {
+                log: (...args) => {
+                    const message = args.map(arg =>
+                        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                    ).join(' ');
+                    output += message + '\n';
+                },
+                error: (...args) => {
+                    const message = args.map(arg => String(arg)).join(' ');
+                    errorOutput += 'Error: ' + message + '\n';
+                },
+                warn: (...args) => {
+                    const message = args.map(arg => String(arg)).join(' ');
+                    output += 'Warning: ' + message + '\n';
+                }
             };
 
-            eval(code);
-            console.log = originalLog;
-            return { output: output || 'Code executed successfully' };
+            // Създаваме изолирана среда
+            const safeGlobals = {
+                console: mockConsole,
+                Math: Math,
+                Date: Date,
+                JSON: JSON,
+                parseInt: parseInt,
+                parseFloat: parseFloat,
+                isNaN: isNaN,
+                isFinite: isFinite,
+                String: String,
+                Number: Number,
+                Boolean: Boolean,
+                Array: Array,
+                Object: Object
+            };
+
+            // Изпълняваме кода в изолирана среда
+            const func = new Function(...Object.keys(safeGlobals), code);
+            func(...Object.values(safeGlobals));
+
+            const result = {
+                output: output || 'Code executed successfully (no output)',
+                error: errorOutput || undefined
+            };
+
+            console.log(`✅ JavaScript execution result:`, result);
+            return result;
+
         } else {
-            return { output: `Code execution for ${language} is not implemented in this demo.\nCode:\n${code}` };
+            const result = {
+                output: `Code execution for ${language} is not implemented in this demo.\n\nReceived code:\n${code}\n\nNote: Only JavaScript is currently supported for execution.`
+            };
+            console.log(`ℹ️ Unsupported language result:`, result);
+            return result;
         }
     } catch (error) {
-        return { error: `Error: ${error.message}` };
+        const result = {
+            error: `Execution Error: ${error.message}\n\nStack trace:\n${error.stack}`
+        };
+        console.log(`❌ Code execution error:`, result);
+        return result;
     }
 }
 
@@ -317,8 +369,9 @@ io.on('connection', (socket) => {
         console.log(`▶️ Code execution request in room ${roomId} by ${userId}`);
 
         const result = executeCode(code, language);
+        console.log(`📤 Code execution result:`, result);
 
-        // Изпращаме резултата обратно на всички в стаята
+        // Изпращаме резултата обратно на всички в code editor стаята
         io.to(`${roomId}-code`).emit('codeExecutionResult', result);
 
         if (rooms[roomId]) {

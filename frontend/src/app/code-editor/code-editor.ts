@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnInit, OnDestroy, ViewChild, Input } from '@angular/core';
 import { WebSocketService } from '../services/websocket';
-import {NgForOf, NgIf} from '@angular/common';
+import { CommonModule } from '@angular/common';
 
 // Monaco Editor types
 declare var monaco: any;
@@ -19,55 +19,10 @@ interface CodeChange {
 
 @Component({
     selector: 'app-shared-code-editor',
-    template: `
-    <div class="code-editor-container">
-      <div class="editor-header">
-        <div class="editor-controls">
-          <select (change)="changeLanguage($event)" [value]="currentLanguage">
-            <option value="javascript">JavaScript</option>
-            <option value="typescript">TypeScript</option>
-            <option value="python">Python</option>
-            <option value="java">Java</option>
-            <option value="csharp">C#</option>
-            <option value="cpp">C++</option>
-            <option value="html">HTML</option>
-            <option value="css">CSS</option>
-            <option value="sql">SQL</option>
-            <option value="json">JSON</option>
-          </select>
-
-          <button (click)="runCode()" [disabled]="!canRunCode()" class="run-btn">
-            ▶️ Run Code
-          </button>
-
-          <button (click)="resetCode()" class="reset-btn">
-            🔄 Reset
-          </button>
-
-          <div class="collaborators">
-            <span *ngFor="let user of activeUsers" class="user-indicator" [style.background-color]="user.color">
-              {{ user.name }}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div class="editor-wrapper">
-        <div #editorContainer class="monaco-editor-container"></div>
-
-        <div class="output-panel" *ngIf="showOutput">
-          <div class="output-header">
-            <span>Output</span>
-            <button (click)="closeOutput()" class="close-output">✕</button>
-          </div>
-          <pre class="output-content">{{ outputContent }}</pre>
-        </div>
-      </div>
-    </div>
-  `,
+    templateUrl: './code-editor.html' ,
     styleUrls: ['./code-editor.css'],
     standalone: true,
-    imports: [NgIf, NgForOf]
+    imports: [CommonModule]
 })
 export class SharedCodeEditorComponent implements OnInit, OnDestroy {
     @ViewChild('editorContainer', { static: true }) editorContainer!: ElementRef;
@@ -92,17 +47,26 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
     constructor(private ws: WebSocketService) {}
 
     async ngOnInit() {
+        console.log('🚀 Code editor initializing...', {
+            roomId: this.roomId,
+            userId: this.userId,
+            userName: this.userName
+        });
+
         // Зареждаме Monaco Editor
         await this.loadMonacoEditor();
         this.initializeEditor();
         this.setupWebSocketListeners();
 
-        // Регистрираме се като active user
-        this.ws.sendJoinCodeEditor(this.roomId, {
-            id: this.userId,
-            name: this.userName,
-            color: this.getUserColor()
-        });
+        // ВАЖНО: Изчакваме малко преди да се присъединим към code editor
+        setTimeout(() => {
+            console.log('👋 Joining code editor room...');
+            this.ws.sendJoinCodeEditor(this.roomId, {
+                id: this.userId,
+                name: this.userName,
+                color: this.getUserColor()
+            });
+        }, 500);
     }
 
     ngOnDestroy() {
@@ -114,7 +78,7 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
 
     private async loadMonacoEditor(): Promise<void> {
         return new Promise((resolve) => {
-            if (typeof monaco !== 'undefined') {
+            if (typeof (window as any).monaco !== 'undefined') {
                 resolve();
                 return;
             }
@@ -128,8 +92,13 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
                 });
 
                 (window as any).require(['vs/editor/editor.main'], () => {
+                    console.log('📝 Monaco Editor loaded successfully');
                     resolve();
                 });
+            };
+            script.onerror = () => {
+                console.error('❌ Failed to load Monaco Editor');
+                resolve(); // Resolve anyway to prevent hanging
             };
             document.head.appendChild(script);
         });
@@ -138,7 +107,7 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
     private initializeEditor(): void {
         const initialCode = this.getInitialCode();
 
-        this.editor = monaco.editor.create(this.editorContainer.nativeElement, {
+        this.editor = (window as any).monaco.editor.create(this.editorContainer.nativeElement, {
             value: initialCode,
             language: this.currentLanguage,
             theme: 'vs-dark',
@@ -164,41 +133,67 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
     }
 
     private setupWebSocketListeners(): void {
+        console.log('🔧 Setting up WebSocket listeners for code editor');
+
         // Слушаме за промени в кода от други потребители
         this.ws.onCodeChange().subscribe((change: CodeChange) => {
+            console.log('📥 Code change received:', change);
             if (change.userId !== this.userId) {
-                this.applyRemoteChange(change);
+                // Проверяваме дали това е code reset (цялостна замяна)
+                if (change.range.startLineNumber === 1 &&
+                    change.range.startColumn === 1 &&
+                    change.range.endLineNumber === Number.MAX_SAFE_INTEGER) {
+                    console.log('🔄 Applying code reset from remote user');
+                    this.isUpdatingRemotely = true;
+                    this.editor.setValue(change.text);
+                    setTimeout(() => { this.isUpdatingRemotely = false; }, 100);
+                } else {
+                    // Обичайна промяна в кода
+                    this.applyRemoteChange(change);
+                }
             }
         });
 
         // Слушаме за промяна на езика
         this.ws.onLanguageChange().subscribe((data: {language: string, userId: string}) => {
+            console.log('📥 Language change received:', data);
             if (data.userId !== this.userId) {
                 this.currentLanguage = data.language;
-                monaco.editor.setModelLanguage(this.editor.getModel(), this.currentLanguage);
-                console.log('🔄 Language changed to:', this.currentLanguage);
+                if (this.editor && (window as any).monaco) {
+                    (window as any).monaco.editor.setModelLanguage(this.editor.getModel(), this.currentLanguage);
+                    console.log('🔄 Language changed to:', this.currentLanguage);
+                }
+                // ЗАБЕЛЕЖКА: Кодът ще се обнови чрез codeReset event, който следва
             }
         });
 
         // Слушаме за нови потребители
         this.ws.onCodeEditorUserJoined().subscribe((user: any) => {
+            console.log('👋 Code editor user joined:', user);
             if (user.id !== this.userId) {
                 this.activeUsers.push(user);
-                console.log('👋 Code editor user joined:', user.name);
             }
         });
 
         // Слушаме за напуснали потребители
         this.ws.onCodeEditorUserLeft().subscribe((userId: string) => {
-            this.activeUsers = this.activeUsers.filter(u => u.id !== userId);
             console.log('👋 Code editor user left:', userId);
+            this.activeUsers = this.activeUsers.filter(u => u.id !== userId);
         });
 
         // Слушаме за резултат от изпълнение на код
         this.ws.onCodeExecutionResult().subscribe((result: {output: string, error?: string}) => {
-            this.outputContent = result.error || result.output;
-            this.showOutput = true;
-            console.log('📤 Code execution result received');
+            console.log('📤 Code execution result received:', result);
+
+            // ВАЖНО: Форсираме UI update
+            setTimeout(() => {
+                this.outputContent = result.error || result.output || 'No output';
+                this.showOutput = true;
+                console.log('💻 Output panel updated:', {
+                    content: this.outputContent,
+                    visible: this.showOutput
+                });
+            }, 0);
         });
     }
 
@@ -249,20 +244,58 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
 
     changeLanguage(event: any): void {
         const newLanguage = event.target.value;
+        console.log('🔄 Changing language from', this.currentLanguage, 'to', newLanguage);
+
         this.currentLanguage = newLanguage;
 
-        // Променяме езика в editor-а
-        monaco.editor.setModelLanguage(this.editor.getModel(), newLanguage);
+        if (!this.editor) {
+            console.error('❌ Editor not initialized');
+            return;
+        }
 
-        // Изпращаме промяната на другите потребители
-        this.ws.sendLanguageChange(this.roomId, newLanguage, this.userId);
+        try {
+            // Променяме езика в editor-а
+            if ((window as any).monaco) {
+                (window as any).monaco.editor.setModelLanguage(this.editor.getModel(), newLanguage);
+                console.log('✅ Language model changed to:', newLanguage);
+            }
 
-        console.log('🔄 Language changed to:', newLanguage);
+            // Получаваме новия код за езика и го зареждаме
+            const newCode = this.getInitialCode();
+            console.log('📝 Setting new code template for', newLanguage);
+
+            // Предотвратяваме sync на собствената промяна
+            this.isUpdatingRemotely = true;
+            this.editor.setValue(newCode);
+
+            setTimeout(() => {
+                this.isUpdatingRemotely = false;
+            }, 100);
+
+            // Изпращаме промяната на другите потребители
+            this.ws.sendLanguageChange(this.roomId, newLanguage, this.userId);
+            this.ws.sendCodeReset(this.roomId, newCode, this.userId);
+
+            console.log('✅ Language changed successfully to:', newLanguage);
+
+        } catch (error) {
+            console.error('❌ Error changing language:', error);
+        }
     }
 
     runCode(): void {
+        if (!this.editor) {
+            console.error('❌ Editor not initialized');
+            return;
+        }
+
         const code = this.editor.getValue();
-        console.log('▶️ Running code...');
+        console.log('▶️ Running code:', {
+            language: this.currentLanguage,
+            codeLength: code.length,
+            roomId: this.roomId,
+            userId: this.userId
+        });
 
         // Изпращаме кода за изпълнение
         this.ws.sendCodeExecution(this.roomId, {
@@ -274,7 +307,7 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
 
     canRunCode(): boolean {
         // Позволяваме изпълнение само на определени езици
-        const runnableLanguages = ['javascript', 'python', 'java', 'cpp', 'csharp'];
+        const runnableLanguages = ['javascript', 'typescript', 'python', 'java', 'cpp', 'csharp'];
         return runnableLanguages.includes(this.currentLanguage);
     }
 
@@ -292,13 +325,48 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
         this.showOutput = false;
     }
 
+    formatOutput(content: string): string {
+        if (!content) return 'No output';
+
+        // Превръщаме \n в <br> за правилно показване
+        return content.replace(/\n/g, '<br>').replace(/ /g, '&nbsp;');
+    }
+
+    showTestOutput(): void {
+        console.log('🧪 Testing output display...');
+        this.outputContent = 'Test output\nLine 2\nLine 3';
+        this.showOutput = true;
+        console.log('Output state:', { content: this.outputContent, visible: this.showOutput });
+    }
+
     private getInitialCode(): string {
+        console.log('🎯 Getting initial code for language:', this.currentLanguage);
+
         const codeTemplates: Record<string, string> = {
             javascript: `// JavaScript Code
 function fibonacci(n) {
     if (n <= 1) return n;
     return fibonacci(n - 1) + fibonacci(n - 2);
 }
+
+console.log("Fibonacci sequence:");
+for (let i = 0; i < 10; i++) {
+    console.log(\`F(\${i}) = \${fibonacci(i)}\`);
+}`,
+
+            typescript: `// TypeScript Code
+interface Person {
+    name: string;
+    age: number;
+}
+
+function fibonacci(n: number): number {
+    if (n <= 1) return n;
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+const person: Person = { name: "Developer", age: 25 };
+console.log(\`Hello \${person.name}!\`);
 
 console.log("Fibonacci sequence:");
 for (let i = 0; i < 10; i++) {
@@ -347,16 +415,47 @@ int main() {
     return 0;
 }`,
 
+            csharp: `// C# Code
+using System;
+
+class Program
+{
+    static void Main()
+    {
+        Console.WriteLine("Fibonacci sequence:");
+        for (int i = 0; i < 10; i++)
+        {
+            Console.WriteLine($"F({i}) = {Fibonacci(i)}");
+        }
+    }
+
+    static int Fibonacci(int n)
+    {
+        if (n <= 1) return n;
+        return Fibonacci(n - 1) + Fibonacci(n - 2);
+    }
+}`,
+
             html: `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Code Interview</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .highlight { background: #f0f8ff; padding: 20px; border-radius: 8px; }
+    </style>
 </head>
 <body>
-    <h1>Welcome to the Interview!</h1>
-    <p>Good luck with your coding challenge.</p>
+    <div class="container">
+        <h1>Welcome to the Interview!</h1>
+        <div class="highlight">
+            <p>Good luck with your coding challenge.</p>
+            <p>Show us what you can do! 🚀</p>
+        </div>
+    </div>
 </body>
 </html>`,
 
@@ -365,6 +464,7 @@ int main() {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .header {
@@ -373,6 +473,7 @@ int main() {
     padding: 2rem;
     border-radius: 10px;
     text-align: center;
+    margin-bottom: 2rem;
 }
 
 .button {
@@ -383,15 +484,94 @@ int main() {
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.3s ease;
+    font-size: 16px;
 }
 
 .button:hover {
     background: #45a049;
     transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin: 20px 0;
+}`,
+
+            sql: `-- SQL Query
+SELECT
+    e.employee_id,
+    e.first_name,
+    e.last_name,
+    d.department_name,
+    e.salary
+FROM employees e
+JOIN departments d ON e.department_id = d.department_id
+WHERE e.salary > (
+    SELECT AVG(salary)
+    FROM employees
+    WHERE department_id = e.department_id
+)
+ORDER BY e.salary DESC;
+
+-- Create a simple table
+CREATE TABLE fibonacci_numbers (
+    position INT PRIMARY KEY,
+    value INT NOT NULL
+);
+
+-- Insert some Fibonacci numbers
+INSERT INTO fibonacci_numbers (position, value) VALUES
+(0, 0), (1, 1), (2, 1), (3, 2), (4, 3),
+(5, 5), (6, 8), (7, 13), (8, 21), (9, 34);`,
+
+            json: `{
+  "interview": {
+    "candidate": {
+      "name": "John Doe",
+      "position": "Software Developer",
+      "experience": "3 years",
+      "skills": [
+        "JavaScript",
+        "TypeScript",
+        "React",
+        "Node.js",
+        "Python"
+      ]
+    },
+    "questions": [
+      {
+        "id": 1,
+        "type": "coding",
+        "difficulty": "medium",
+        "topic": "algorithms",
+        "description": "Implement Fibonacci sequence"
+      },
+      {
+        "id": 2,
+        "type": "system-design",
+        "difficulty": "hard",
+        "topic": "scalability",
+        "description": "Design a chat application"
+      }
+    ],
+    "evaluation": {
+      "technical_skills": 8,
+      "problem_solving": 9,
+      "communication": 7,
+      "overall_rating": "strong_hire"
+    }
+  }
 }`
         };
 
-        return codeTemplates[this.currentLanguage] || codeTemplates["javascript"];
+        const selectedCode = codeTemplates[this.currentLanguage] || codeTemplates['javascript'];
+        console.log('📋 Selected template for', this.currentLanguage, ':', selectedCode.substring(0, 50) + '...');
+
+        return selectedCode;
     }
 
     private getUserColor(): string {
