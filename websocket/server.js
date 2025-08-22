@@ -7,7 +7,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
-// roomId -> { host: socketId|null, guest: socketId|null, hostReady: boolean, guestReady: boolean, negotiationStarted: boolean, lastActivity: timestamp }
+// roomId -> { host: socketId|null, guest: socketId|null, hostReady: boolean, guestReady: boolean, negotiationStarted: boolean, lastActivity: timestamp, codeEditorUsers: Map }
 const rooms = {};
 
 // Cleanup старите rooms на всеки 30 секунди
@@ -35,6 +35,28 @@ function getLocalIPAddress() {
         }
     }
     return '127.0.0.1';
+}
+
+// Code execution function (simplified - в production използвайте sandbox)
+function executeCode(code, language) {
+    try {
+        if (language === 'javascript') {
+            // Използваме eval само за demo - НЕ правете това в production!
+            const originalLog = console.log;
+            let output = '';
+            console.log = (...args) => {
+                output += args.join(' ') + '\n';
+            };
+
+            eval(code);
+            console.log = originalLog;
+            return { output: output || 'Code executed successfully' };
+        } else {
+            return { output: `Code execution for ${language} is not implemented in this demo.\nCode:\n${code}` };
+        }
+    } catch (error) {
+        return { error: `Error: ${error.message}` };
+    }
 }
 
 // Reset negotiation състоянието на room
@@ -71,7 +93,7 @@ function tryStartNegotiation(roomId) {
 
         // Изпращаме със small delay за да се уверим че tracks са готови
         setTimeout(() => {
-            if (rooms[roomId]?.host) { // Double check che room все още съществува
+            if (rooms[roomId]?.host) { // Double check че room все още съществува
                 io.to(room.host).emit('startNegotiation');
             }
         }, 500);
@@ -80,6 +102,8 @@ function tryStartNegotiation(roomId) {
 
 io.on('connection', (socket) => {
     console.log('✅ Connected:', socket.id);
+
+    // ============ VIDEO CALL EVENTS ============
 
     socket.on('joinRoom', ({ roomId, role }) => {
         if (!roomId) return;
@@ -93,7 +117,8 @@ io.on('connection', (socket) => {
                 hostReady: false,
                 guestReady: false,
                 negotiationStarted: false,
-                lastActivity: Date.now()
+                lastActivity: Date.now(),
+                codeEditorUsers: new Map()
             };
         }
         const room = rooms[roomId];
@@ -225,6 +250,103 @@ io.on('connection', (socket) => {
         }
     });
 
+    // ============ CODE EDITOR EVENTS ============
+
+    socket.on('joinCodeEditor', ({ roomId, user }) => {
+        console.log(`📝 ${user.name} joining code editor in room ${roomId}`);
+
+        if (!rooms[roomId]) {
+            rooms[roomId] = {
+                host: null,
+                guest: null,
+                hostReady: false,
+                guestReady: false,
+                negotiationStarted: false,
+                lastActivity: Date.now(),
+                codeEditorUsers: new Map()
+            };
+        }
+
+        const room = rooms[roomId];
+        room.codeEditorUsers.set(socket.id, user);
+        room.lastActivity = Date.now();
+
+        socket.join(`${roomId}-code`);
+
+        // Уведоми другите потребители
+        socket.to(`${roomId}-code`).emit('codeEditorUserJoined', user);
+
+        // Изпрати списък с текущите потребители на новия user
+        const otherUsers = Array.from(room.codeEditorUsers.values()).filter(u => u.id !== user.id);
+        otherUsers.forEach(otherUser => {
+            socket.emit('codeEditorUserJoined', otherUser);
+        });
+    });
+
+    socket.on('leaveCodeEditor', ({ roomId, userId }) => {
+        console.log(`📝 User ${userId} leaving code editor in room ${roomId}`);
+
+        const room = rooms[roomId];
+        if (room) {
+            room.codeEditorUsers.delete(socket.id);
+            socket.to(`${roomId}-code`).emit('codeEditorUserLeft', userId);
+        }
+
+        socket.leave(`${roomId}-code`);
+    });
+
+    socket.on('codeChange', ({ roomId, change }) => {
+        console.log(`📝 Code change in room ${roomId} by ${change.userId}`);
+        socket.to(`${roomId}-code`).emit('codeChange', change);
+
+        if (rooms[roomId]) {
+            rooms[roomId].lastActivity = Date.now();
+        }
+    });
+
+    socket.on('languageChange', ({ roomId, language, userId }) => {
+        console.log(`🔄 Language change to ${language} in room ${roomId}`);
+        socket.to(`${roomId}-code`).emit('languageChange', { language, userId });
+
+        if (rooms[roomId]) {
+            rooms[roomId].lastActivity = Date.now();
+        }
+    });
+
+    socket.on('codeExecution', ({ roomId, code, language, userId }) => {
+        console.log(`▶️ Code execution request in room ${roomId} by ${userId}`);
+
+        const result = executeCode(code, language);
+
+        // Изпращаме резултата обратно на всички в стаята
+        io.to(`${roomId}-code`).emit('codeExecutionResult', result);
+
+        if (rooms[roomId]) {
+            rooms[roomId].lastActivity = Date.now();
+        }
+    });
+
+    socket.on('codeReset', ({ roomId, code, userId }) => {
+        console.log(`🔄 Code reset in room ${roomId} by ${userId}`);
+        socket.to(`${roomId}-code`).emit('codeChange', {
+            range: {
+                startLineNumber: 1,
+                startColumn: 1,
+                endLineNumber: Number.MAX_SAFE_INTEGER,
+                endColumn: 1
+            },
+            text: code,
+            timestamp: Date.now(),
+            userId: userId
+        });
+
+        if (rooms[roomId]) {
+            rooms[roomId].lastActivity = Date.now();
+        }
+    });
+
+    // ============ DISCONNECT HANDLING ============
+
     socket.on('disconnect', () => {
         console.log('❌ Disconnected:', socket.id);
 
@@ -252,6 +374,13 @@ io.on('connection', (socket) => {
                 // Уведоми останалия участник
                 socket.to(roomId).emit('userLeft', { socketId: socket.id });
 
+                // Почисти и от code editor
+                if (room.codeEditorUsers && room.codeEditorUsers.has(socket.id)) {
+                    const user = room.codeEditorUsers.get(socket.id);
+                    room.codeEditorUsers.delete(socket.id);
+                    socket.to(`${roomId}-code`).emit('codeEditorUserLeft', user.id);
+                }
+
                 if (!room.host && !room.guest) {
                     console.log(`🗑️ Deleting empty room ${roomId}`);
                     delete rooms[roomId];
@@ -261,19 +390,35 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Debug команда за преглед на rooms
+    // ============ DEBUG COMMANDS ============
+
     socket.on('debugRooms', () => {
-        socket.emit('debugInfo', { rooms });
+        socket.emit('debugInfo', { rooms: Object.fromEntries(
+                Object.entries(rooms).map(([roomId, room]) => [
+                    roomId,
+                    {
+                        ...room,
+                        codeEditorUsers: Array.from(room.codeEditorUsers?.values() || [])
+                    }
+                ])
+            )});
     });
 });
 
+// ============ SERVER STARTUP ============
+
 const localIP = getLocalIPAddress();
 const PORT = process.env.PORT || 8001;
-const HOST = process.env.HOST || '0.0.0.0';
+const HOST = process.env.HOST || '127.0.0.1';
 
 server.listen(PORT, HOST, () => {
     console.log(`🚀 WebSocket server running on:`);
     console.log(`   - Local:   http://127.0.0.1:${PORT}`);
     console.log(`   - Network: http://${localIP}:${PORT}`);
     console.log(`   - All interfaces: http://${HOST}:${PORT}`);
+    console.log('');
+    console.log('📋 Supported events:');
+    console.log('   Video Call: joinRoom, ready, offer, answer, ice-candidate');
+    console.log('   Code Editor: joinCodeEditor, codeChange, languageChange, codeExecution');
+    console.log('   Debug: debugRooms');
 });

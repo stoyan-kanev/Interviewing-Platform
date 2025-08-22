@@ -167,7 +167,102 @@ export class WebSocketService {
             });
         });
     }
+    sendJoinCodeEditor(roomId: string, user: {id: string, name: string, color: string}): void {
+        console.log('👋 Joining code editor for room:', roomId, 'as:', user.name);
+        this.socket.emit('joinCodeEditor', { roomId, user });
+    }
 
+    sendLeaveCodeEditor(roomId: string, userId: string): void {
+        console.log('👋 Leaving code editor for room:', roomId);
+        this.socket.emit('leaveCodeEditor', { roomId, userId });
+    }
+
+    onCodeEditorUserJoined(): Observable<{id: string, name: string, color: string}> {
+        return new Observable((observer) => {
+            this.socket.on('codeEditorUserJoined', (user: {id: string, name: string, color: string}) => {
+                console.log('👋 Code editor user joined:', user.name);
+                observer.next(user);
+            });
+        });
+    }
+
+    onCodeEditorUserLeft(): Observable<string> {
+        return new Observable((observer) => {
+            this.socket.on('codeEditorUserLeft', (userId: string) => {
+                console.log('👋 Code editor user left:', userId);
+                observer.next(userId);
+            });
+        });
+    }
+
+    // Code synchronization
+    sendCodeChange(roomId: string, change: {
+        range: {
+            startLineNumber: number;
+            startColumn: number;
+            endLineNumber: number;
+            endColumn: number;
+        };
+        text: string;
+        timestamp: number;
+        userId: string;
+    }): void {
+        this.socket.emit('codeChange', { roomId, change });
+    }
+
+    onCodeChange(): Observable<{
+        range: {
+            startLineNumber: number;
+            startColumn: number;
+            endLineNumber: number;
+            endColumn: number;
+        };
+        text: string;
+        timestamp: number;
+        userId: string;
+    }> {
+        return new Observable((observer) => {
+            this.socket.on('codeChange', (change) => {
+                observer.next(change);
+            });
+        });
+    }
+
+    // Language management
+    sendLanguageChange(roomId: string, language: string, userId: string): void {
+        console.log('🔄 Sending language change:', language);
+        this.socket.emit('languageChange', { roomId, language, userId });
+    }
+
+    onLanguageChange(): Observable<{language: string, userId: string}> {
+        return new Observable((observer) => {
+            this.socket.on('languageChange', (data: {language: string, userId: string}) => {
+                console.log('📥 Language change received:', data.language);
+                observer.next(data);
+            });
+        });
+    }
+
+    // Code execution
+    sendCodeExecution(roomId: string, data: {code: string, language: string, userId: string}): void {
+        console.log('▶️ Sending code for execution');
+        this.socket.emit('codeExecution', { roomId, ...data });
+    }
+
+    onCodeExecutionResult(): Observable<{output: string, error?: string}> {
+        return new Observable((observer) => {
+            this.socket.on('codeExecutionResult', (result: {output: string, error?: string}) => {
+                console.log('📤 Code execution result received');
+                observer.next(result);
+            });
+        });
+    }
+
+    // Code reset
+    sendCodeReset(roomId: string, code: string, userId: string): void {
+        console.log('🔄 Sending code reset');
+        this.socket.emit('codeReset', { roomId, code, userId });
+    }
     // Debug helpers
     sendDebugRooms(): void {
         this.socket.emit('debugRooms');

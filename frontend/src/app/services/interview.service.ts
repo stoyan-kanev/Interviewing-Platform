@@ -34,4 +34,5 @@ export class InterviewsService {
     createInterview(dto: CreateInterviewDto) {
         return this.http.post(`${this.apiUrl}/interviews/`, dto, { withCredentials: true });
     }
+
 }

@@ -2,13 +2,113 @@ import { Component, ElementRef, OnInit, AfterViewInit, ViewChild, OnDestroy } fr
 import { ActivatedRoute } from '@angular/router';
 import { WebSocketService } from '../services/websocket';
 import { NgClass, NgIf } from '@angular/common';
+import {SharedCodeEditorComponent} from '../code-editor/code-editor';
 
 @Component({
     selector: 'app-live-interview',
-    templateUrl: './live-interview.html',
+    template: `
+<div class="interview-container">
+    <!-- Debug Info (optional) -->
+<!--    <div class="debug-info" style="position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 10px; font-size: 12px; z-index: 1000;">-->
+<!--        <div>Role: {{role}}</div>-->
+<!--        <div>Local Tracks: {{debugInfo.localTracks}}</div>-->
+<!--        <div>Remote Tracks: {{debugInfo.remoteTracks}}</div>-->
+<!--        <div>Connection: {{debugInfo.connectionState}}</div>-->
+<!--        <div>ICE: {{debugInfo.iceConnectionState}}</div>-->
+<!--        <button (click)="showDebugInfo()">Log State</button>-->
+<!--        <button *ngIf="showUnmuteCTA" class="unmute-cta" (click)="unmuteRemote()">Tap to unmute 🔊</button>-->
+<!--    </div>-->
+
+    <!-- Main Content with Toggle -->
+    <div class="main-content" [class.split-view]="showCodeEditor">
+
+
+        <!-- Video Section (your working code) -->
+        <div class="video-section" [class.collapsed]="showCodeEditor">
+            <div class="video-wrapper">
+                <div class="videos">
+                    <!-- HOST VIEW -->
+                    <ng-container *ngIf="role === 'host'; else guestTemplate">
+                        <div class="my-cam-warper">
+                            <video #localVideo autoplay muted playsinline></video>
+                            <div class="participant-name">{{ candidateName }} (Вие)</div>
+                            <div class="status-indicator">
+                                🟢 Онлайн
+                                <span *ngIf="!micEnabled">🔇 Без звук</span>
+                            </div>
+                            <div class="controls">
+                                <button (click)="toggleMic()">
+                                    <i class="fas" [ngClass]="micEnabled ? 'fa-microphone' : 'fa-microphone-slash'"></i>
+                                </button>
+                                <button (click)="toggleCamera()">
+                                    <i class="fas" [ngClass]="cameraEnabled ? 'fa-video' : 'fa-video-slash'"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="remote-cam">
+                            <video #remoteVideo autoplay playsinline></video>
+                            <div class="participant-name">Събеседник</div>
+                            <div class="status-indicator">🟢 Онлайн</div>
+                        </div>
+                    </ng-container>
+
+                    <!-- GUEST VIEW -->
+                    <ng-template #guestTemplate>
+                        <div class="remote-cam">
+                            <video #remoteVideo autoplay playsinline></video>
+                            <div class="participant-name">Интервюиращ</div>
+                            <div class="status-indicator">🟢 Онлайн</div>
+                        </div>
+
+                        <div class="my-cam-warper">
+                            <video #localVideo autoplay muted playsinline></video>
+                            <div class="participant-name">{{ candidateName }} (Вие)</div>
+                            <div class="status-indicator">
+                                🟢 Онлайн
+                                <span *ngIf="!micEnabled">🔇 Без звук</span>
+                            </div>
+                            <div class="controls">
+                                <button (click)="toggleMic()">
+                                    <i class="fas" [ngClass]="micEnabled ? 'fa-microphone' : 'fa-microphone-slash'"></i>
+                                </button>
+                                <button (click)="toggleCamera()">
+                                    <i class="fas" [ngClass]="cameraEnabled ? 'fa-video' : 'fa-video-slash'"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </ng-template>
+                </div>
+
+                <!-- Control buttons -->
+                <div class="interview-controls">
+                    <button (click)="toggleCodeEditor()" class="toggle-editor-btn">
+                        {{ showCodeEditor ? '📹 Show Video Only' : '💻 Show Code Editor' }}
+                    </button>
+
+                    <button (click)="leaveCall()" class="leave-call-btn">
+                        ⛔ Напусни срещата
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Code Editor Section -->
+        <div class="code-editor-section" *ngIf="showCodeEditor">
+            <app-shared-code-editor
+                [roomId]="roomId"
+                [userId]="currentUserId"
+                [userName]="candidateName"
+                [isHost]="isHost">
+            </app-shared-code-editor>
+        </div>
+
+    </div>
+</div>
+    `,
     styleUrls: ['./live-interview.css'],
     standalone: true,
-    imports: [NgClass, NgIf],
+    imports: [NgClass, NgIf, SharedCodeEditorComponent],
 })
 export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy {
     @ViewChild('localVideo') localVideoRef!: ElementRef<HTMLVideoElement>;
@@ -20,6 +120,9 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
     role: 'host' | 'guest' = 'guest';
     isHost = false;
     candidateName = '';
+
+    // NEW: Code editor toggle
+    showCodeEditor = false;
 
     showUnmuteCTA = false;
 
@@ -43,7 +146,7 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
     private peer!: RTCPeerConnection;
     private localStream: MediaStream = new MediaStream();
     private remoteStream!: MediaStream;
-    private roomId!: string;
+    roomId!: string;
 
     private pendingIce: RTCIceCandidateInit[] = [];
     private remoteDescSet = false;
@@ -102,7 +205,6 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
             this.resolveRoleReady();
         });
 
-        // Listen for other users joining
         this.ws.onUserJoined().subscribe((data: any) => {
             console.log('👋 User joined:', data);
             setTimeout(() => {
@@ -110,7 +212,6 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
             }, 1000);
         });
 
-        // НОВО: Listen за reset connection signal
         this.ws.onResetConnection().subscribe(() => {
             console.log('🔄 Reset connection signal received');
             this.resetConnection();
@@ -118,7 +219,6 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
 
         this.ws.joinRoom(this.roomId, desiredRole);
 
-        // Централен оркестратор
         await this.viewReady;
         await this.roleReady;
         await this.initCamera();
@@ -154,7 +254,6 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
         this.ws.disconnect();
     }
 
-    // НОВA функция за reset на connection
     private resetConnection(): void {
         console.log('🔄 Resetting WebRTC connection');
 
@@ -167,7 +266,6 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
             this.peer.close();
         }
 
-        // Създаваме нова connection
         setTimeout(() => {
             if (!this.isDestroyed) {
                 this.createPeerConnection();
@@ -177,7 +275,7 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
     }
 
     private async fetchRoom(roomUuid: string): Promise<any> {
-        const res = await fetch(`http://10.70.71.104:8000/interview-rooms/public/${roomUuid}/`, {
+        const res = await fetch(`http://localhost:8000/interview-rooms/public/${roomUuid}/`, {
             credentials: 'include',
         });
         if (!res.ok) throw new Error('room not ok');
@@ -185,7 +283,7 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
     }
 
     private async fetchMeOrNull(): Promise<any | null> {
-        const res = await fetch('http://10.70.71.104:8000/auth/me/', { credentials: 'include' });
+        const res = await fetch('http://localhost:8000/auth/me/', { credentials: 'include' });
         if (!res.ok) return null;
         return await res.json();
     }
@@ -238,7 +336,6 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
 
         console.log('🔗 Peer connection created');
 
-        // Remote video setup
         this.remoteStream = new MediaStream();
         const rv = this.remoteVideoRef.nativeElement;
         rv.srcObject = this.remoteStream;
@@ -257,7 +354,6 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
                 streams: e.streams.map(s => s.id)
             });
 
-            // Премахваме стари tracks от същия тип преди да добавим новия
             const existingTracks = this.remoteStream.getTracks().filter(t => t.kind === e.track.kind);
             existingTracks.forEach(t => {
                 this.remoteStream.removeTrack(t);
@@ -267,7 +363,6 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
             this.remoteStream.addTrack(e.track);
             this.updateDebugInfo();
 
-            // Force video element to update
             const rv = this.remoteVideoRef.nativeElement;
             rv.srcObject = this.remoteStream;
             setTimeout(() => rv.play().catch(console.error), 100);
@@ -323,7 +418,6 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
         this.peerConnectionReady = true;
         console.log('✅ Peer connection fully ready');
 
-        // Добавяме tracks СЛЕД като всичко е готово
         this.addLocalTracksWhenReady();
     }
 
@@ -384,14 +478,12 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
             return;
         }
 
-        // ГОСТЪТ изпраща renegotiate request ако не може да negotiation директно
         if (!this.canNegotiate && !this.isHost) {
             console.log('🔄 Guest requesting renegotiation from host');
             this.ws.sendNeedRenegotiate(this.roomId);
             return;
         }
 
-        // ХОСТЪТ може да прави offer ако е разрешено
         if (!this.canNegotiate || !this.isHost || this.makingOffer) {
             console.log('🚫 Cannot negotiate now:', {
                 canNegotiate: this.canNegotiate,
@@ -482,7 +574,6 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
                 this.ws.sendAnswer(this.roomId, answer);
                 console.log('📤 Answer sent');
 
-                // Добавяне на pending ICE candidates
                 console.log('🔄 Processing', this.pendingIce.length, 'pending ICE candidates');
                 for (const c of this.pendingIce) {
                     try {
@@ -511,7 +602,6 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
                 this.remoteDescSet = true;
                 console.log('✅ Remote description set (answer)');
 
-                // Добавяне на pending ICE candidates
                 console.log('🔄 Processing', this.pendingIce.length, 'pending ICE candidates');
                 for (const c of this.pendingIce) {
                     try {
@@ -593,7 +683,8 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
         });
     }
 
-    // UI controls
+    // ============ UI CONTROLS (your working methods) ============
+
     unmuteRemote() {
         const rv = this.remoteVideoRef.nativeElement;
         rv.muted = false;
@@ -619,7 +710,24 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
         window.location.href = '/';
     }
 
-    // Manual retry function за debug
+    // ============ NEW: CODE EDITOR CONTROLS ============
+
+    toggleCodeEditor(): void {
+        this.showCodeEditor = !this.showCodeEditor;
+        console.log('💻 Code editor toggled:', this.showCodeEditor ? 'shown' : 'hidden');
+    }
+
+    get currentUserId(): string {
+        let userId = localStorage.getItem('interview_user_id');
+        if (!userId) {
+            userId = 'user_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('interview_user_id', userId);
+        }
+        return userId;
+    }
+
+    // ============ DEBUG METHODS ============
+
     manualRetry(): void {
         console.log('🔄 Manual retry triggered');
         this.resetConnection();
@@ -631,46 +739,9 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
         console.log('Room ID:', this.roomId);
         console.log('Connection established:', this.connectionEstablished);
         console.log('Can negotiate:', this.canNegotiate);
-        console.log('Local stream tracks:', this.localStream?.getTracks().map(t => ({
-            kind: t.kind,
-            id: t.id,
-            enabled: t.enabled,
-            readyState: t.readyState
-        })));
-        console.log('Remote stream tracks:', this.remoteStream?.getTracks().map(t => ({
-            kind: t.kind,
-            id: t.id,
-            enabled: t.enabled,
-            readyState: t.readyState
-        })));
-
-        if (this.peer) {
-            console.log('Peer connection state:', this.peer.connectionState);
-            console.log('ICE connection state:', this.peer.iceConnectionState);
-            console.log('Signaling state:', this.peer.signalingState);
-            console.log('ICE gathering state:', this.peer.iceGatheringState);
-
-            this.peer.getTransceivers().forEach((transceiver, index) => {
-                console.log(`Transceiver ${index}:`, {
-                    direction: transceiver.direction,
-                    currentDirection: transceiver.currentDirection,
-                    mid: transceiver.mid,
-                    senderTrack: transceiver.sender.track ? {
-                        kind: transceiver.sender.track.kind,
-                        id: transceiver.sender.track.id,
-                        enabled: transceiver.sender.track.enabled
-                    } : null,
-                    receiverTrack: transceiver.receiver.track ? {
-                        kind: transceiver.receiver.track.kind,
-                        id: transceiver.receiver.track.id,
-                        enabled: transceiver.receiver.track.enabled
-                    } : null
-                });
-            });
-        }
+        this.logPeerConnectionState();
     }
 
-    // Debug helper
     showDebugInfo(): void {
         console.log('🔍 Debug Info:', this.debugInfo);
         this.logPeerConnectionState();
