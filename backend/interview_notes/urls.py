@@ -10,7 +10,7 @@ urlpatterns = [
          name='interview-notes-detail'),
 
     # List all notes for current user
-    path('',
+    path('user-notes/',
          InterviewNoteListAPIView.as_view(),
          name='interview-notes-list'),
 
@@ -20,7 +20,7 @@ urlpatterns = [
          name='interview-notes-create'),
 
     # Update/delete specific note by ID
-    path(' snote/<int:pk>/',
+    path('note/<int:pk>/',
          InterviewNoteUpdateAPIView.as_view(),
          name='interview-notes-update'),
 ]

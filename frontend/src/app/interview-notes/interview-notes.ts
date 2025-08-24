@@ -10,7 +10,7 @@ interface InterviewNote {
     interviewer_id: number;
     content: string;
     timestamp: string;
-    candidate_name?: string;
+    interviewer_name?: string;
     tags?: string[];
 }
 
@@ -22,140 +22,7 @@ interface NoteTemplate {
 
 @Component({
     selector: 'app-interview-notes',
-    template: `
-    <div class="notes-container" *ngIf="isHost">
-      <div class="notes-header">
-        <div class="header-title">
-          <h3>📝 Interview Notes</h3>
-          <span class="candidate-info" *ngIf="candidateName">
-            Candidate: {{ candidateName }}
-          </span>
-        </div>
-
-        <div class="header-controls">
-          <select (change)="loadTemplate($event)" class="template-selector">
-            <option value="">Choose template...</option>
-            <option *ngFor="let template of noteTemplates" [value]="template.id">
-              {{ template.name }}
-            </option>
-          </select>
-
-          <button (click)="saveNotes()"
-                  [disabled]="isSaving"
-                  class="save-btn"
-                  [class.saving]="isSaving">
-            {{ isSaving ? '💾 Saving...' : '💾 Save' }}
-          </button>
-
-          <button (click)="toggleNotesPanel()" class="toggle-btn">
-            {{ showNotes ? '➖' : '➕' }}
-          </button>
-        </div>
-      </div>
-
-      <div class="notes-content" [class.collapsed]="!showNotes">
-
-        <!-- Quick Actions -->
-        <div class="quick-actions">
-          <button *ngFor="let action of quickActions"
-                  (click)="addQuickNote(action)"
-                  class="quick-action-btn"
-                  [class]="action.type">
-            {{ action.emoji }} {{ action.label }}
-          </button>
-        </div>
-
-        <!-- Notes Tabs -->
-        <div class="notes-tabs">
-          <button *ngFor="let tab of noteTabs"
-                  (click)="activeTab = tab.id"
-                  class="tab-btn"
-                  [class.active]="activeTab === tab.id">
-            {{ tab.emoji }} {{ tab.name }}
-          </button>
-        </div>
-
-        <!-- Notes Editor -->
-        <div class="notes-editor">
-          <div *ngIf="activeTab === 'general'" class="tab-content">
-            <label>General Notes:</label>
-            <textarea
-              [(ngModel)]="notes.general"
-              (ngModelChange)="onNotesChange()"
-              placeholder="Overall impression, communication skills, personality fit..."
-              rows="6"
-              class="notes-textarea">
-            </textarea>
-          </div>
-
-          <div *ngIf="activeTab === 'technical'" class="tab-content">
-            <label>Technical Assessment:</label>
-            <textarea
-              [(ngModel)]="notes.technical"
-              (ngModelChange)="onNotesChange()"
-              placeholder="Coding skills, problem-solving approach, technical knowledge..."
-              rows="6"
-              class="notes-textarea">
-            </textarea>
-          </div>
-
-          <div *ngIf="activeTab === 'questions'" class="tab-content">
-            <label>Questions & Answers:</label>
-            <textarea
-              [(ngModel)]="notes.questions"
-              (ngModelChange)="onNotesChange()"
-              placeholder="Key questions asked and candidate responses..."
-              rows="6"
-              class="notes-textarea">
-            </textarea>
-          </div>
-
-          <div *ngIf="activeTab === 'decision'" class="tab-content">
-            <label>Final Decision:</label>
-
-            <div class="rating-section">
-              <label>Overall Rating:</label>
-              <div class="rating-stars">
-                <button *ngFor="let star of [1,2,3,4,5]; let i = index"
-                        (click)="setRating(star)"
-                        class="star-btn"
-                        [class.active]="notes.rating >= star">
-                  ⭐
-                </button>
-                <span class="rating-text">{{ getRatingText() }}</span>
-              </div>
-            </div>
-
-            <div class="recommendation-section">
-              <label>Recommendation:</label>
-              <select [(ngModel)]="notes.recommendation" (ngModelChange)="onNotesChange()" class="recommendation-select">
-                <option value="">Select recommendation...</option>
-                <option value="strong_hire">🟢 Strong Hire</option>
-                <option value="hire">🟡 Hire</option>
-                <option value="no_hire">🔴 No Hire</option>
-                <option value="strong_no_hire">⛔ Strong No Hire</option>
-              </select>
-            </div>
-
-            <textarea
-              [(ngModel)]="notes.decision"
-              (ngModelChange)="onNotesChange()"
-              placeholder="Final thoughts, concerns, reasons for recommendation..."
-              rows="4"
-              class="notes-textarea">
-            </textarea>
-          </div>
-        </div>
-
-        <!-- Auto-save indicator -->
-        <div class="save-status" *ngIf="lastSaved">
-          <span class="save-indicator" [class.success]="saveStatus === 'success'" [class.error]="saveStatus === 'error'">
-            {{ saveStatusText }}
-          </span>
-        </div>
-      </div>
-    </div>
-  `,
+    templateUrl: './interview-notes.html',
     styleUrls: ['./interview-notes.css'],
     standalone: true,
     imports: [CommonModule, FormsModule]
@@ -286,7 +153,7 @@ GENERAL:
     private loadExistingNotes(): void {
         if (!this.roomId) return;
 
-        this.http.get<InterviewNote>(`/api/interview-notes/${this.roomId}/`)
+        this.http.get<InterviewNote>(`http://localhost:8000/interview-notes/${this.roomId}/`)
             .subscribe({
                 next: (note) => {
                     if (note && note.content) {
@@ -404,11 +271,11 @@ GENERAL:
             interviewer_id: this.interviewerId,
             content: JSON.stringify(this.notes),
             timestamp: new Date().toISOString(),
-            candidate_name: this.candidateName
+            interviewer_name: this.candidateName
         };
 
         try {
-            await this.http.post('/api/interview-notes/', noteData).toPromise();
+            await this.http.post(`http://localhost:8000/interview-notes/${this.roomId}/`, noteData).toPromise();
 
             this.saveStatus = 'success';
             this.lastSaved = new Date();

@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 class InterviewNote(models.Model):
     room_id = models.CharField(max_length=255, db_index=True)
     interviewer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    candidate_name = models.CharField(max_length=255, blank=True)
+    interviewer_name = models.CharField(max_length=255, blank=True)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -1,1 +1,155 @@
-<p>interview-notes works!</p>
+@if (isHost) {
+    <div class="notes-container">
+        <div class="notes-header">
+            <div class="header-title">
+                <h3>📝 Interview Notes</h3>
+                @if (candidateName) {
+                    <span class="candidate-info">
+            Candidate: {{ candidateName }}
+          </span>
+                }
+            </div>
+
+            <div class="header-controls">
+                <select (change)="loadTemplate($event)" class="template-selector">
+                    <option value="">Choose template...</option>
+                    @for (template of noteTemplates; track template.id) {
+                        <option [value]="template.id">
+                            {{ template.name }}
+                        </option>
+                    }
+                </select>
+
+                <button (click)="saveNotes()"
+                        [disabled]="isSaving"
+                        class="save-btn"
+                        [class.saving]="isSaving">
+                    {{ isSaving ? '💾 Saving...' : '💾 Save' }}
+                </button>
+
+                <button (click)="toggleNotesPanel()" class="toggle-btn">
+                    {{ showNotes ? '➖' : '➕' }}
+                </button>
+            </div>
+        </div>
+
+        <div class="notes-content" [class.collapsed]="!showNotes">
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                @for (action of quickActions; track action.id) {
+                    <button (click)="addQuickNote(action)"
+                            class="quick-action-btn"
+                            [class]="action.type">
+                        {{ action.emoji }} {{ action.label }}
+                    </button>
+                }
+            </div>
+
+            <!-- Notes Tabs -->
+            <div class="notes-tabs">
+                @for (tab of noteTabs; track tab.id) {
+                    <button (click)="activeTab = tab.id"
+                            class="tab-btn"
+                            [class.active]="activeTab === tab.id">
+                        {{ tab.emoji }} {{ tab.name }}
+                    </button>
+                }
+            </div>
+
+            <!-- Notes Editor -->
+            <div class="notes-editor">
+                @if (activeTab === 'general') {
+                    <div class="tab-content">
+                        <label>General Notes:</label>
+                        <textarea
+                            [(ngModel)]="notes.general"
+                            (ngModelChange)="onNotesChange()"
+                            placeholder="Overall impression, communication skills, personality fit..."
+                            rows="6"
+                            class="notes-textarea">
+            </textarea>
+                    </div>
+                }
+
+                @if (activeTab === 'technical') {
+                    <div class="tab-content">
+                        <label>Technical Assessment:</label>
+                        <textarea
+                            [(ngModel)]="notes.technical"
+                            (ngModelChange)="onNotesChange()"
+                            placeholder="Coding skills, problem-solving approach, technical knowledge..."
+                            rows="6"
+                            class="notes-textarea">
+            </textarea>
+                    </div>
+                }
+
+                @if (activeTab === 'questions') {
+                    <div class="tab-content">
+                        <label>Questions & Answers:</label>
+                        <textarea
+                            [(ngModel)]="notes.questions"
+                            (ngModelChange)="onNotesChange()"
+                            placeholder="Key questions asked and candidate responses..."
+                            rows="6"
+                            class="notes-textarea">
+            </textarea>
+                    </div>
+                }
+
+                @if (activeTab === 'decision') {
+                    <div class="tab-content">
+                        <label>Final Decision:</label>
+
+                        <div class="rating-section">
+                            <label>Overall Rating:</label>
+                            <div class="rating-stars">
+                                @for (star of [1,2,3,4,5]; track star) {
+                                    <button (click)="setRating(star)"
+                                            class="star-btn"
+                                            [class.active]="notes.rating >= star">
+                                        ⭐
+                                    </button>
+                                }
+                                <span class="rating-text">{{ getRatingText() }}</span>
+                            </div>
+                        </div>
+
+                        <div class="recommendation-section">
+                            <label>Recommendation:</label>
+                            <select [(ngModel)]="notes.recommendation"
+                                    (ngModelChange)="onNotesChange()"
+                                    class="recommendation-select">
+                                <option value="">Select recommendation...</option>
+                                <option value="strong_hire">🟢 Strong Hire</option>
+                                <option value="hire">🟡 Hire</option>
+                                <option value="no_hire">🔴 No Hire</option>
+                                <option value="strong_no_hire">⛔ Strong No Hire</option>
+                            </select>
+                        </div>
+
+                        <textarea
+                            [(ngModel)]="notes.decision"
+                            (ngModelChange)="onNotesChange()"
+                            placeholder="Final thoughts, concerns, reasons for recommendation..."
+                            rows="4"
+                            class="notes-textarea">
+            </textarea>
+                    </div>
+                }
+            </div>
+
+            <!-- Auto-save indicator -->
+            @if (lastSaved) {
+                <div class="save-status">
+          <span class="save-indicator"
+                [class.success]="saveStatus === 'success'"
+                [class.error]="saveStatus === 'error'">
+            {{ saveStatusText }}
+          </span>
+                </div>
+            }
+        </div>
+    </div>
+}
