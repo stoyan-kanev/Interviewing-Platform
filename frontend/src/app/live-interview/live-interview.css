@@ -9,7 +9,7 @@
     overflow: hidden;
 }
 
-/* Main content with code editor support */
+/* Main content with code editor and notes support */
 .main-content {
     flex: 1;
     display: flex;
@@ -17,7 +17,7 @@
 }
 
 .main-content.split-view {
-    /* When code editor is open, we split the view */
+    /* When code editor or notes are open, we split the view */
 }
 
 .video-section {
@@ -29,7 +29,7 @@
 }
 
 .video-section.collapsed {
-    /* Smaller space when code editor is open */
+    /* Smaller space when code editor or notes are open */
     flex: 0 0 400px;
 }
 
@@ -132,7 +132,7 @@ video {
     background: rgba(0,0,0,0.85);
 }
 
-/* NEW: Interview controls section */
+/* ENHANCED: Interview controls section with notes support */
 .interview-controls {
     display: flex;
     justify-content: center;
@@ -141,6 +141,77 @@ video {
     flex-wrap: wrap;
 }
 
+/* Base control button styles */
+.control-btn {
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    position: relative;
+    overflow: hidden;
+}
+
+.control-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Video Only Button */
+.video-btn {
+    background: #3b82f6;
+}
+
+.video-btn:hover {
+    background: #2563eb;
+}
+
+.video-btn.active {
+    background: #1d4ed8;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+/* Code Editor Button */
+.code-btn {
+    background: #10b981;
+}
+
+.code-btn:hover {
+    background: #059669;
+}
+
+.code-btn.active {
+    background: #047857;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+/* Notes Button - NEW */
+.notes-btn {
+    background: #f59e0b;
+}
+
+.notes-btn:hover {
+    background: #d97706;
+}
+
+.notes-btn.active {
+    background: #b45309;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+/* Leave Call Button */
+.leave-btn {
+    background: #dc2626;
+}
+
+.leave-btn:hover {
+    background: #b91c1c;
+}
+
+/* Legacy button styles for compatibility */
 .toggle-editor-btn {
     background: #3b82f6;
     color: white;
@@ -175,7 +246,7 @@ video {
     transform: translateY(-2px);
 }
 
-/* NEW: Code editor section */
+/* Code editor section - existing */
 .code-editor-section {
     flex: 1;
     min-width: 600px;
@@ -183,10 +254,73 @@ video {
     background: #1e1e1e;
 }
 
-/* Debug info styles */
+/* NEW: Notes section with persistent state support */
+.notes-section {
+    flex: 1;
+    min-width: 400px;
+    border-left: 1px solid #334155;
+    background: #1a1a1a;
+    max-height: 100vh;
+    overflow-y: auto;
+    transition: all 0.3s ease;
+}
+
+/* КЛЮЧОВО: Когато е скрито с [hidden], запазваме layout-а но го правим невидим */
+.notes-section[hidden] {
+    display: none !important;
+}
+
+/* Animation when notes become visible */
+.notes-section.visible {
+    animation: slideInFromRight 0.3s ease-out;
+}
+
+@keyframes slideInFromRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Notes loading state */
+.notes-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 1.1rem;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Debug info styles - enhanced */
 .debug-info {
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     border-radius: 6px;
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 12px;
+    font-size: 11px;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    min-width: 150px;
 }
 
 .debug-info button {
@@ -199,13 +333,20 @@ video {
     cursor: pointer;
     margin: 2px;
     transition: background-color 0.2s ease;
+    width: 100%;
+    margin-bottom: 2px;
 }
 
 .debug-info button:hover {
     background: #4b5563;
 }
 
-/* Responsive Design */
+/* Active state for debug buttons */
+.debug-info button[style*="background-color: rgb(59, 130, 246)"] {
+    background: #3b82f6 !important;
+}
+
+/* Responsive Design - enhanced for notes */
 @media (max-width: 1200px) {
     .main-content.split-view {
         flex-direction: column;
@@ -216,10 +357,12 @@ video {
         min-width: auto;
     }
 
-    .code-editor-section {
+    .code-editor-section,
+    .notes-section {
         border-left: none;
         border-top: 1px solid #334155;
         min-width: auto;
+        min-height: 300px;
     }
 
     .videos {
@@ -248,12 +391,42 @@ video {
     .interview-controls {
         flex-direction: column;
         align-items: center;
+        gap: 0.5rem;
     }
 
+    .control-btn,
     .toggle-editor-btn,
     .leave-call-btn {
         width: 100%;
         max-width: 300px;
+    }
+
+    /* Stack debug info on mobile */
+    .debug-info {
+        position: relative;
+        top: unset;
+        right: unset;
+        margin: 10px;
+        width: calc(100% - 20px);
+    }
+}
+
+@media (max-width: 480px) {
+    .video-wrapper {
+        padding: 0.5rem;
+    }
+
+    .interview-controls {
+        padding: 0 1rem;
+    }
+
+    .control-btn {
+        font-size: 0.85rem;
+        padding: 0.6rem 1rem;
+    }
+
+    video {
+        max-width: 260px;
     }
 }
 
@@ -266,4 +439,25 @@ button:focus-visible {
 /* Smooth transitions */
 * {
     transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Additional animation for button press effect */
+.control-btn:active {
+    transform: translateY(-1px) scale(0.98);
+}
+
+/* Hover effect for better UX */
+.control-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    transition: left 0.5s;
+}
+
+.control-btn:hover::before {
+    left: 100%;
 }

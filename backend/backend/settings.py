@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'user',
     'interview_rooms',
     'interviews',
+    'interview_notes'
 
 ]
 

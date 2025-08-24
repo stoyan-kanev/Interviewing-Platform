@@ -1,21 +1,34 @@
 <div class="interview-container">
-    <!-- Debug Info (optional) -->
-    <!--    <div class="debug-info" style="position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 10px; font-size: 12px; z-index: 1000;">-->
-    <!--        <div>Role: {{role}}</div>-->
-    <!--        <div>Local Tracks: {{debugInfo.localTracks}}</div>-->
-    <!--        <div>Remote Tracks: {{debugInfo.remoteTracks}}</div>-->
-    <!--        <div>Connection: {{debugInfo.connectionState}}</div>-->
-    <!--        <div>ICE: {{debugInfo.iceConnectionState}}</div>-->
-    <!--        <button (click)="showDebugInfo()">Log State</button>-->
-    <!--        <button *ngIf="showUnmuteCTA" class="unmute-cta" (click)="unmuteRemote()">Tap to unmute 🔊</button>-->
-    <!--    </div>-->
+<!--    &lt;!&ndash; Debug Info (може да коментирате за production) &ndash;&gt;-->
+<!--    <div class="debug-info">-->
+<!--        <div>Role: {{role}}</div>-->
+<!--        <div>Local Tracks: {{debugInfo.localTracks}}</div>-->
+<!--        <div>Remote Tracks: {{debugInfo.remoteTracks}}</div>-->
+<!--        <div>Connection: {{debugInfo.connectionState}}</div>-->
+<!--        <div>ICE: {{debugInfo.iceConnectionState}}</div>-->
+<!--        <div>View: {{showCodeEditor ? 'Code' : (showNotes ? 'Notes' : 'Video')}}</div>-->
+
+<!--        <button (click)="showDebugInfo()">Log State</button>-->
+
+<!--        &lt;!&ndash; View control buttons in debug panel &ndash;&gt;-->
+<!--        <div style="margin-top: 5px; display: flex; flex-direction: column; gap: 2px;">-->
+<!--            <button (click)="toggleCodeEditor()"-->
+<!--                    [style.background-color]="showCodeEditor ? '#3b82f6' : 'transparent'">-->
+<!--                💻 Code-->
+<!--            </button>-->
+<!--            <button *ngIf="isHost"-->
+<!--                    (click)="toggleNotes()"-->
+<!--                    [style.background-color]="showNotes ? '#3b82f6' : 'transparent'">-->
+<!--                📝 Notes-->
+<!--            </button>-->
+<!--        </div>-->
+<!--    </div>-->
 
     <!-- Main Content with Toggle -->
-    <div class="main-content" [class.split-view]="showCodeEditor">
-
+    <div class="main-content" [class.split-view]="showCodeEditor || showNotes">
 
         <!-- Video Section (your working code) -->
-        <div class="video-section" [class.collapsed]="showCodeEditor">
+        <div class="video-section" [class.collapsed]="showCodeEditor || showNotes">
             <div class="video-wrapper">
                 <div class="videos">
                     <!-- HOST VIEW -->
@@ -71,20 +84,33 @@
                     </ng-template>
                 </div>
 
-                <!-- Control buttons -->
+                <!-- Control buttons - ОБНОВЕНИ с Notes поддръжка -->
                 <div class="interview-controls">
-                    <button (click)="toggleCodeEditor()" class="toggle-editor-btn">
-                        {{ showCodeEditor ? '📹 Show Video Only' : '💻 Show Code Editor' }}
+
+                    <!-- Code Editor toggle бутон -->
+                    <button (click)="toggleCodeEditor()"
+                            [class.active]="showCodeEditor"
+                            class="control-btn code-btn">
+                        💻 {{showCodeEditor ? 'Hide Code Editor' : 'Show Code Editor'}}
                     </button>
 
-                    <button (click)="leaveCall()" class="leave-call-btn">
+                    <!-- Notes toggle бутон - НОВО! Само за host -->
+                    <button *ngIf="isHost"
+                            (click)="toggleNotes()"
+                            [class.active]="showNotes"
+                            class="control-btn notes-btn">
+                        📝 {{showNotes ? 'Hide Notes' : 'Show Notes'}}
+                    </button>
+
+                    <!-- Leave call бутон -->
+                    <button (click)="leaveCall()" class="control-btn leave-btn">
                         ⛔ Напусни срещата
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Code Editor Section -->
+        <!-- Code Editor Section - показва се само при showCodeEditor -->
         <div class="code-editor-section" *ngIf="showCodeEditor">
             <app-shared-code-editor
                 [roomId]="roomId"
@@ -92,6 +118,28 @@
                 [userName]="candidateName"
                 [isHost]="isHost">
             </app-shared-code-editor>
+        </div>
+
+        <!-- Interview Notes Section - КЛЮЧОВО: използваме [hidden] вместо *ngIf -->
+        <!-- Това запазва компонента в DOM-а, но го скрива визуално -->
+        <div class="notes-section"
+             [hidden]="!showNotes"
+             [class.visible]="showNotes">
+
+            <!-- Създаваме notes компонента само ако е host И е инициализиран -->
+            <app-interview-notes
+                *ngIf="isHost && notesInitialized"
+                [roomId]="roomId"
+                [candidateName]="candidateName"
+                [isHost]="isHost"
+                [interviewerId]="interviewerId">
+            </app-interview-notes>
+
+            <!-- Loading state за първото зареждане -->
+            <div *ngIf="isHost && showNotes && !notesInitialized"
+                 class="notes-loading">
+                📝 Зареждане на бележки...
+            </div>
         </div>
 
     </div>

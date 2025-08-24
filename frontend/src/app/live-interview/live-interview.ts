@@ -3,13 +3,14 @@ import { ActivatedRoute } from '@angular/router';
 import { WebSocketService } from '../services/websocket';
 import { NgClass, NgIf } from '@angular/common';
 import {SharedCodeEditorComponent} from '../code-editor/code-editor';
+import {InterviewNotesComponent} from '../interview-notes/interview-notes';
 
 @Component({
     selector: 'app-live-interview',
     templateUrl: './live-interview.html',
     styleUrls: ['./live-interview.css'],
     standalone: true,
-    imports: [NgClass, NgIf, SharedCodeEditorComponent],
+    imports: [NgClass, NgIf, SharedCodeEditorComponent, InterviewNotesComponent],
 })
 export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy {
     @ViewChild('localVideo') localVideoRef!: ElementRef<HTMLVideoElement>;
@@ -22,8 +23,13 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
     isHost = false;
     candidateName = '';
 
-    // NEW: Code editor toggle
+    // View state management - ключовото за persistent notes
     showCodeEditor = false;
+    showNotes = false;
+    notesInitialized = false; // Notes компонентът се инициализира само веднъж
+
+    // NEW: User ID for interviewer
+    interviewerId?: number;
 
     showUnmuteCTA = false;
 
@@ -47,7 +53,7 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
     private peer!: RTCPeerConnection;
     private localStream: MediaStream = new MediaStream();
     private remoteStream!: MediaStream;
-    roomId!: string;
+    roomId!: string; // Public so template can access it
 
     private pendingIce: RTCIceCandidateInit[] = [];
     private remoteDescSet = false;
@@ -95,6 +101,11 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
             me && room && me.id === room.owner ? 'host' : 'guest';
 
         console.log('🎯 Desired role:', desiredRole);
+
+        // Store interviewer ID if host
+        if (desiredRole === 'host' && me) {
+            this.interviewerId = me.id;
+        }
 
         this.ws.connect();
 
@@ -611,12 +622,49 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
         window.location.href = '/';
     }
 
-    // ============ NEW: CODE EDITOR CONTROLS ============
+    // ============ VIEW MANAGEMENT - КЛЮЧОВИТЕ МЕТОДИ ЗА PERSISTENT NOTES ============
 
     toggleCodeEditor(): void {
         this.showCodeEditor = !this.showCodeEditor;
-        console.log('💻 Code editor toggled:', this.showCodeEditor ? 'shown' : 'hidden');
+
+        // Ако показваме code editor, скриваме notes
+        if (this.showCodeEditor) {
+            this.showNotes = false;
+        }
+
+        console.log('💻 Code editor:', this.showCodeEditor ? 'SHOWN' : 'HIDDEN');
     }
+
+    toggleNotes(): void {
+        this.showNotes = !this.showNotes;
+
+        // Ако показваме notes, скриваме code editor
+        if (this.showNotes) {
+            this.showCodeEditor = false;
+
+            // Инициализираме notes компонента само първия път
+            if (!this.notesInitialized) {
+                this.notesInitialized = true;
+                console.log('📝 Notes component initialized for first time');
+            }
+        }
+
+        console.log('📝 Notes:', this.showNotes ? 'SHOWN' : 'HIDDEN');
+    }
+
+    // Връщаме към video only view
+    showVideoOnly(): void {
+        this.showCodeEditor = false;
+        this.showNotes = false;
+        console.log('📹 Switched to video-only view');
+    }
+
+    // Getter за template - проверява дали нещо се показва
+    get isVideoOnly(): boolean {
+        return !this.showCodeEditor && !this.showNotes;
+    }
+
+    // ============ CODE EDITOR CONTROLS ============
 
     get currentUserId(): string {
         let userId = localStorage.getItem('interview_user_id');
@@ -640,6 +688,11 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
         console.log('Room ID:', this.roomId);
         console.log('Connection established:', this.connectionEstablished);
         console.log('Can negotiate:', this.canNegotiate);
+        console.log('View States:', {
+            showCodeEditor: this.showCodeEditor,
+            showNotes: this.showNotes,
+            notesInitialized: this.notesInitialized
+        });
         this.logPeerConnectionState();
     }
 
