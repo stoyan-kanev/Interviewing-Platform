@@ -41,7 +41,6 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
 
     activeUsers: Array<{id: string, name: string, color: string}> = [];
 
-    // Цветове за потребителите
     private userColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'];
 
     constructor(private ws: WebSocketService) {}
@@ -53,12 +52,10 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
             userName: this.userName
         });
 
-        // Зареждаме Monaco Editor
         await this.loadMonacoEditor();
         this.initializeEditor();
         this.setupWebSocketListeners();
 
-        // ВАЖНО: Изчакваме малко преди да се присъединим към code editor
         setTimeout(() => {
             console.log('👋 Joining code editor room...');
             this.ws.sendJoinCodeEditor(this.roomId, {
@@ -83,7 +80,6 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
                 return;
             }
 
-            // Зареждаме Monaco от CDN
             const script = document.createElement('script');
             script.src = 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js';
             script.onload = () => {
@@ -98,7 +94,7 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
             };
             script.onerror = () => {
                 console.error('❌ Failed to load Monaco Editor');
-                resolve(); // Resolve anyway to prevent hanging
+                resolve();
             };
             document.head.appendChild(script);
         });
@@ -122,7 +118,6 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
             autoIndent: 'full'
         });
 
-        // Слушаме за промени в кода
         this.editor.onDidChangeModelContent((event: any) => {
             if (!this.isUpdatingRemotely) {
                 this.handleLocalCodeChange(event);
@@ -135,7 +130,6 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
     private setupWebSocketListeners(): void {
         console.log('🔧 Setting up WebSocket listeners for code editor');
 
-        // Слушаме за промени в кода от други потребители
         this.ws.onCodeChange().subscribe((change: CodeChange) => {
             console.log('📥 Code change received:', change);
             if (change.userId !== this.userId) {
@@ -148,13 +142,11 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
                     this.editor.setValue(change.text);
                     setTimeout(() => { this.isUpdatingRemotely = false; }, 100);
                 } else {
-                    // Обичайна промяна в кода
                     this.applyRemoteChange(change);
                 }
             }
         });
 
-        // Слушаме за промяна на езика
         this.ws.onLanguageChange().subscribe((data: {language: string, userId: string}) => {
             console.log('📥 Language change received:', data);
             if (data.userId !== this.userId) {
@@ -163,11 +155,9 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
                     (window as any).monaco.editor.setModelLanguage(this.editor.getModel(), this.currentLanguage);
                     console.log('🔄 Language changed to:', this.currentLanguage);
                 }
-                // ЗАБЕЛЕЖКА: Кодът ще се обнови чрез codeReset event, който следва
             }
         });
 
-        // Слушаме за нови потребители
         this.ws.onCodeEditorUserJoined().subscribe((user: any) => {
             console.log('👋 Code editor user joined:', user);
             if (user.id !== this.userId) {
@@ -175,17 +165,14 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
             }
         });
 
-        // Слушаме за напуснали потребители
         this.ws.onCodeEditorUserLeft().subscribe((userId: string) => {
             console.log('👋 Code editor user left:', userId);
             this.activeUsers = this.activeUsers.filter(u => u.id !== userId);
         });
 
-        // Слушаме за резултат от изпълнение на код
         this.ws.onCodeExecutionResult().subscribe((result: {output: string, error?: string}) => {
             console.log('📤 Code execution result received:', result);
 
-            // ВАЖНО: Форсираме UI update
             setTimeout(() => {
                 this.outputContent = result.error || result.output || 'No output';
                 this.showOutput = true;
@@ -200,14 +187,12 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
     private handleLocalCodeChange(event: any): void {
         const timestamp = Date.now();
 
-        // Предотвратяваме спам от бързи промени
         if (timestamp - this.lastChangeTimestamp < 100) {
             return;
         }
 
         this.lastChangeTimestamp = timestamp;
 
-        // Изпращаме промяната на другите потребители
         event.changes.forEach((change: any) => {
             const codeChange: CodeChange = {
                 range: change.range,
@@ -224,7 +209,6 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
         this.isUpdatingRemotely = true;
 
         try {
-            // Прилагаме промяната в editor-а
             const operation = {
                 range: change.range,
                 text: change.text
@@ -235,7 +219,6 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
         } catch (error) {
             console.error('❌ Failed to apply remote change:', error);
         } finally {
-            // Възстановяваме local editing след малко
             setTimeout(() => {
                 this.isUpdatingRemotely = false;
             }, 50);
@@ -254,17 +237,14 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
         }
 
         try {
-            // Променяме езика в editor-а
             if ((window as any).monaco) {
                 (window as any).monaco.editor.setModelLanguage(this.editor.getModel(), newLanguage);
                 console.log('✅ Language model changed to:', newLanguage);
             }
 
-            // Получаваме новия код за езика и го зареждаме
             const newCode = this.getInitialCode();
             console.log('📝 Setting new code template for', newLanguage);
 
-            // Предотвратяваме sync на собствената промяна
             this.isUpdatingRemotely = true;
             this.editor.setValue(newCode);
 
@@ -272,7 +252,6 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
                 this.isUpdatingRemotely = false;
             }, 100);
 
-            // Изпращаме промяната на другите потребители
             this.ws.sendLanguageChange(this.roomId, newLanguage, this.userId);
             this.ws.sendCodeReset(this.roomId, newCode, this.userId);
 
@@ -297,7 +276,6 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
             userId: this.userId
         });
 
-        // Изпращаме кода за изпълнение
         this.ws.sendCodeExecution(this.roomId, {
             code,
             language: this.currentLanguage,
@@ -328,7 +306,6 @@ export class SharedCodeEditorComponent implements OnInit, OnDestroy {
     formatOutput(content: string): string {
         if (!content) return 'No output';
 
-        // Превръщаме \n в <br> за правилно показване
         return content.replace(/\n/g, '<br>').replace(/ /g, '&nbsp;');
     }
 
@@ -575,7 +552,6 @@ INSERT INTO fibonacci_numbers (position, value) VALUES
     }
 
     private getUserColor(): string {
-        // Генерираме цвят базиран на userId
         const hash = this.userId.split('').reduce((a, b) => {
             a = ((a << 5) - a) + b.charCodeAt(0);
             return a & a;

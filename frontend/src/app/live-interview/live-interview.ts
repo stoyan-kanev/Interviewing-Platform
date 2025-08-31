@@ -1,16 +1,17 @@
 import { Component, ElementRef, OnInit, AfterViewInit, ViewChild, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { WebSocketService } from '../services/websocket';
-import { NgClass, NgIf } from '@angular/common';
+import { NgClass } from '@angular/common';
 import {SharedCodeEditorComponent} from '../code-editor/code-editor';
 import {InterviewNotesComponent} from '../interview-notes/interview-notes';
+import {AuthService} from '../services/auth';
 
 @Component({
     selector: 'app-live-interview',
     templateUrl: './live-interview.html',
     styleUrls: ['./live-interview.css'],
     standalone: true,
-    imports: [NgClass, NgIf, SharedCodeEditorComponent, InterviewNotesComponent],
+    imports: [NgClass, SharedCodeEditorComponent, InterviewNotesComponent, InterviewNotesComponent],
 })
 export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy {
     @ViewChild('localVideo') localVideoRef!: ElementRef<HTMLVideoElement>;
@@ -23,17 +24,13 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
     isHost = false;
     candidateName = '';
 
-    // View state management - ключовото за persistent notes
     showCodeEditor = false;
     showNotes = false;
-    notesInitialized = false; // Notes компонентът се инициализира само веднъж
-
-    // NEW: User ID for interviewer
+    notesInitialized = false;
     interviewerId?: number;
 
     showUnmuteCTA = false;
 
-    // Debug info
     debugInfo = {
         localTracks: 0,
         remoteTracks: 0,
@@ -42,30 +39,26 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
         signalingState: 'stable'
     };
 
-    // Negotiation guards
     private canNegotiate = false;
     private makingOffer = false;
     private polite = false;
     private lastOfferAt = 0;
     private static readonly OFFER_COOLDOWN_MS = 1500;
 
-    // WebRTC
     private peer!: RTCPeerConnection;
     private localStream: MediaStream = new MediaStream();
     private remoteStream!: MediaStream;
-    roomId!: string; // Public so template can access it
+    roomId!: string;
 
     private pendingIce: RTCIceCandidateInit[] = [];
     private remoteDescSet = false;
 
-    // State flags
     private mediaInitialized = false;
     private peerConnectionReady = false;
     private negotiationPending = false;
     private connectionEstablished = false;
     private isDestroyed = false;
 
-    // Orchestration promises
     private viewReady!: Promise<void>;
     private resolveViewReady!: () => void;
 
@@ -77,7 +70,8 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
 
     constructor(
         private route: ActivatedRoute,
-        private ws: WebSocketService
+        private ws: WebSocketService,
+        private auth: AuthService,
     ) {
         this.viewReady = new Promise<void>(res => (this.resolveViewReady = res));
         this.roleReady = new Promise<void>(res => (this.resolveRoleReady = res));
@@ -86,7 +80,8 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
 
     async ngOnInit(): Promise<void> {
         this.roomId = this.route.snapshot.paramMap.get('room_id')!;
-        this.candidateName = localStorage.getItem('candidate_name') || 'Анонимен';
+
+        this.candidateName = localStorage.getItem('candidate_name') || 'Candidate';
 
         console.log('🏠 Room ID:', this.roomId);
         console.log('👤 Candidate Name:', this.candidateName);
@@ -102,7 +97,6 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
 
         console.log('🎯 Desired role:', desiredRole);
 
-        // Store interviewer ID if host
         if (desiredRole === 'host' && me) {
             this.interviewerId = me.id;
         }
@@ -595,7 +589,6 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
         });
     }
 
-    // ============ UI CONTROLS (your working methods) ============
 
     unmuteRemote() {
         const rv = this.remoteVideoRef.nativeElement;
@@ -622,12 +615,10 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
         window.location.href = '/';
     }
 
-    // ============ VIEW MANAGEMENT - КЛЮЧОВИТЕ МЕТОДИ ЗА PERSISTENT NOTES ============
 
     toggleCodeEditor(): void {
         this.showCodeEditor = !this.showCodeEditor;
 
-        // Ако показваме code editor, скриваме notes
         if (this.showCodeEditor) {
             this.showNotes = false;
         }
@@ -638,11 +629,9 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
     toggleNotes(): void {
         this.showNotes = !this.showNotes;
 
-        // Ако показваме notes, скриваме code editor
         if (this.showNotes) {
             this.showCodeEditor = false;
 
-            // Инициализираме notes компонента само първия път
             if (!this.notesInitialized) {
                 this.notesInitialized = true;
                 console.log('📝 Notes component initialized for first time');
@@ -652,19 +641,15 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
         console.log('📝 Notes:', this.showNotes ? 'SHOWN' : 'HIDDEN');
     }
 
-    // Връщаме към video only view
     showVideoOnly(): void {
         this.showCodeEditor = false;
         this.showNotes = false;
         console.log('📹 Switched to video-only view');
     }
 
-    // Getter за template - проверява дали нещо се показва
     get isVideoOnly(): boolean {
         return !this.showCodeEditor && !this.showNotes;
     }
-
-    // ============ CODE EDITOR CONTROLS ============
 
     get currentUserId(): string {
         let userId = localStorage.getItem('interview_user_id');
@@ -675,7 +660,6 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
         return userId;
     }
 
-    // ============ DEBUG METHODS ============
 
     manualRetry(): void {
         console.log('🔄 Manual retry triggered');

@@ -10,7 +10,6 @@ const io = new Server(server, { cors: { origin: '*' } });
 // roomId -> { host: socketId|null, guest: socketId|null, hostReady: boolean, guestReady: boolean, negotiationStarted: boolean, lastActivity: timestamp, codeEditorUsers: Map }
 const rooms = {};
 
-// Cleanup старите rooms на всеки 30 секунди
 setInterval(() => {
     const now = Date.now();
     const ROOM_TIMEOUT = 5 * 60 * 1000; // 5 минути
@@ -24,7 +23,6 @@ setInterval(() => {
     }
 }, 30000);
 
-// Функция за намиране на локалния IP адрес
 function getLocalIPAddress() {
     const interfaces = os.networkInterfaces();
     for (const name of Object.keys(interfaces)) {
@@ -37,18 +35,15 @@ function getLocalIPAddress() {
     return '127.0.0.1';
 }
 
-// Code execution function (simplified - в production използвайте sandbox)
 function executeCode(code, language) {
     console.log(`🔧 Executing ${language} code:`, code.substring(0, 100) + '...');
 
     try {
         if (language === 'javascript') {
-            // Създаваме sandbox environment
             const originalConsole = console;
             let output = '';
             let errorOutput = '';
 
-            // Пренасочваме console.log
             const mockConsole = {
                 log: (...args) => {
                     const message = args.map(arg =>
@@ -66,7 +61,6 @@ function executeCode(code, language) {
                 }
             };
 
-            // Създаваме изолирана среда
             const safeGlobals = {
                 console: mockConsole,
                 Math: Math,
@@ -83,7 +77,6 @@ function executeCode(code, language) {
                 Object: Object
             };
 
-            // Изпълняваме кода в изолирана среда
             const func = new Function(...Object.keys(safeGlobals), code);
             func(...Object.values(safeGlobals));
 
@@ -111,7 +104,6 @@ function executeCode(code, language) {
     }
 }
 
-// Reset negotiation състоянието на room
 function resetNegotiation(roomId) {
     const room = rooms[roomId];
     if (room) {
@@ -119,12 +111,10 @@ function resetNegotiation(roomId) {
         room.negotiationStarted = false;
         room.lastActivity = Date.now();
 
-        // Уведоми всички участници че трябва да reset-нат connection
         io.to(roomId).emit('resetConnection');
     }
 }
 
-// Функция за автоматично стартиране на negotiation
 function tryStartNegotiation(roomId) {
     const room = rooms[roomId];
     if (!room) return;
@@ -137,15 +127,13 @@ function tryStartNegotiation(roomId) {
         negotiationStarted: room.negotiationStarted
     });
 
-    // Започни negotiation САМО когато и двамата са ready и не е започвало преди
     if (room.host && room.guest && room.hostReady && room.guestReady && !room.negotiationStarted) {
         console.log(`🚀 Starting negotiation for room ${roomId} - signaling HOST`);
         room.negotiationStarted = true;
         room.lastActivity = Date.now();
 
-        // Изпращаме със small delay за да се уверим че tracks са готови
         setTimeout(() => {
-            if (rooms[roomId]?.host) { // Double check че room все още съществува
+            if (rooms[roomId]?.host) {
                 io.to(room.host).emit('startNegotiation');
             }
         }, 500);
@@ -155,7 +143,6 @@ function tryStartNegotiation(roomId) {
 io.on('connection', (socket) => {
     console.log('✅ Connected:', socket.id);
 
-    // ============ VIDEO CALL EVENTS ============
 
     socket.on('joinRoom', ({ roomId, role }) => {
         if (!roomId) return;
@@ -178,7 +165,6 @@ io.on('connection', (socket) => {
 
         let finalRole = role;
 
-        // Ако някой се опитва да се присъедини отново със същата роля
         if (role === 'host' && room.host === socket.id) {
             console.log(`🔄 Host ${socket.id} rejoining room ${roomId}`);
             resetNegotiation(roomId);
@@ -187,7 +173,6 @@ io.on('connection', (socket) => {
             resetNegotiation(roomId);
         }
 
-        // Логика за присвояване на роли
         if (role === 'host') {
             if (room.host && room.host !== socket.id) {
                 console.log(`⚠️ Host slot taken, assigning guest role to ${socket.id}`);
@@ -205,20 +190,18 @@ io.on('connection', (socket) => {
             }
         }
 
-        // Ако някой сменя ролята си, reset-ваме negotiation
         if ((finalRole === 'host' && room.host !== socket.id) ||
             (finalRole === 'guest' && room.guest !== socket.id)) {
             resetNegotiation(roomId);
         }
 
-        // Присвояване на ролята
         if (finalRole === 'host') {
             room.host = socket.id;
-            room.hostReady = false; // Reset ready състоянието
+            room.hostReady = false;
             console.log(`👑 ${socket.id} is now HOST in room ${roomId}`);
         } else {
             room.guest = socket.id;
-            room.guestReady = false; // Reset ready състоянието
+            room.guestReady = false;
             console.log(`👤 ${socket.id} is now GUEST in room ${roomId}`);
         }
 
@@ -233,10 +216,8 @@ io.on('connection', (socket) => {
             negotiationStarted: room.negotiationStarted
         });
 
-        // Уведоми другия участник, че някой се е присъединил
         socket.to(roomId).emit('userJoined', { role: finalRole, socketId: socket.id });
 
-        // Проверка дали може да започне negotiation
         setTimeout(() => tryStartNegotiation(roomId), 1000);
     });
 
@@ -262,7 +243,6 @@ io.on('connection', (socket) => {
             negotiationStarted: room.negotiationStarted
         });
 
-        // Проверка дали може да започне negotiation
         setTimeout(() => tryStartNegotiation(roomId), 500);
     });
 
@@ -275,7 +255,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // WebRTC signaling с logging
     socket.on('offer', ({ roomId, offer }) => {
         console.log(`📤 Offer sent by ${socket.id} to room ${roomId}`);
         socket.to(roomId).emit('offer', offer);
@@ -294,7 +273,6 @@ io.on('connection', (socket) => {
         if (rooms[roomId]) rooms[roomId].lastActivity = Date.now();
     });
 
-    // Нов event за connection established
     socket.on('connectionEstablished', ({ roomId }) => {
         console.log(`🎉 Connection established in room ${roomId} by ${socket.id}`);
         if (rooms[roomId]) {
@@ -302,7 +280,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // ============ CODE EDITOR EVENTS ============
 
     socket.on('joinCodeEditor', ({ roomId, user }) => {
         console.log(`📝 ${user.name} joining code editor in room ${roomId}`);
@@ -325,10 +302,8 @@ io.on('connection', (socket) => {
 
         socket.join(`${roomId}-code`);
 
-        // Уведоми другите потребители
         socket.to(`${roomId}-code`).emit('codeEditorUserJoined', user);
 
-        // Изпрати списък с текущите потребители на новия user
         const otherUsers = Array.from(room.codeEditorUsers.values()).filter(u => u.id !== user.id);
         otherUsers.forEach(otherUser => {
             socket.emit('codeEditorUserJoined', otherUser);
@@ -371,7 +346,6 @@ io.on('connection', (socket) => {
         const result = executeCode(code, language);
         console.log(`📤 Code execution result:`, result);
 
-        // Изпращаме резултата обратно на всички в code editor стаята
         io.to(`${roomId}-code`).emit('codeExecutionResult', result);
 
         if (rooms[roomId]) {
@@ -403,7 +377,6 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log('❌ Disconnected:', socket.id);
 
-        // Почисти rooms
         for (const roomId in rooms) {
             const room = rooms[roomId];
             let changed = false;
@@ -424,10 +397,8 @@ io.on('connection', (socket) => {
             }
 
             if (changed) {
-                // Уведоми останалия участник
                 socket.to(roomId).emit('userLeft', { socketId: socket.id });
 
-                // Почисти и от code editor
                 if (room.codeEditorUsers && room.codeEditorUsers.has(socket.id)) {
                     const user = room.codeEditorUsers.get(socket.id);
                     room.codeEditorUsers.delete(socket.id);
@@ -443,7 +414,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // ============ DEBUG COMMANDS ============
 
     socket.on('debugRooms', () => {
         socket.emit('debugInfo', { rooms: Object.fromEntries(
