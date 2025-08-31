@@ -56,6 +56,16 @@ export class WebSocketService {
             });
         });
     }
+    onSocketConnect(): Observable<void> {
+        return new Observable<void>((observer) => {
+            this.socket.on('connect', () => observer.next());
+        });
+    }
+    onSocketDisconnect(): Observable<void> {
+        return new Observable<void>((observer) => {
+            this.socket.on('disconnect', () => observer.next());
+        });
+    }
 
     sendReady(roomId: string, role: 'host' | 'guest') {
         console.log('✅ Sending ready signal for room:', roomId, 'as:', role);

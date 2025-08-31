@@ -11,7 +11,8 @@
                             <video #localVideo autoplay muted playsinline></video>
                             <div class="participant-name">{{ candidateName }} (You)</div>
                             <div class="status-indicator">
-                                🟢 Online
+                                {{ selfStatusText }}
+
                                 @if (!micEnabled) {
                                     <span>🔇 Muted</span>
                                 }
@@ -29,7 +30,7 @@
                         <div class="remote-cam">
                             <video #remoteVideo autoplay playsinline></video>
                             <div class="participant-name">Candidate</div>
-                            <div class="status-indicator">🟢 Online</div>
+                            <div class="status-indicator">{{remoteStatusText}}</div>
                         </div>
                     } @else {
 
@@ -37,7 +38,8 @@
                             <video #localVideo autoplay muted playsinline></video>
                             <div class="participant-name">{{ candidateName }} (You)</div>
                             <div class="status-indicator">
-                                🟢 Онлайн
+                                {{ selfStatusText }}
+
                                 @if (!micEnabled) {
                                     <span>🔇 Muted</span>
                                 }
@@ -55,7 +57,7 @@
                         <div class="remote-cam">
                             <video #remoteVideo autoplay playsinline></video>
                             <div class="participant-name">Interviewer</div>
-                            <div class="status-indicator">🟢 Online</div>
+                            <div class="status-indicator">{{ remoteStatusText }}</div>
                         </div>
                     }
                 </div>

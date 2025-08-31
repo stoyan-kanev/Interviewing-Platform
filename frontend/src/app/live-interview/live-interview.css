@@ -435,7 +435,10 @@ button:focus-visible {
     outline: 2px solid #3b82f6;
     outline-offset: 2px;
 }
-
+.status-indicator { font-weight: 600; }
+.status-indicator.online { color: #16a34a; }
+.status-indicator.connecting { color: #ca8a04; }
+.status-indicator.offline { color: #dc2626; }
 /* Smooth transitions */
 * {
     transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;

@@ -1,7 +1,7 @@
 import { Component, ElementRef, OnInit, AfterViewInit, ViewChild, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { WebSocketService } from '../services/websocket';
-import { NgClass } from '@angular/common';
+import { NgClass} from '@angular/common';
 import {SharedCodeEditorComponent} from '../code-editor/code-editor';
 import {InterviewNotesComponent} from '../interview-notes/interview-notes';
 import {AuthService} from '../services/auth';
@@ -28,7 +28,10 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
     showNotes = false;
     notesInitialized = false;
     interviewerId?: number;
-
+    selfOnline = false;
+    remoteOnline = false;
+    webrtcConnected = false;
+    lastRemoteSeenAt?: number;
     showUnmuteCTA = false;
 
     debugInfo = {
@@ -67,7 +70,10 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
 
     private mediaReady!: Promise<void>;
     private resolveMediaReady!: () => void;
-
+    private markRemoteOnline(on: boolean) {
+        this.remoteOnline = on;
+        if (on) this.lastRemoteSeenAt = Date.now();
+    }
     constructor(
         private route: ActivatedRoute,
         private ws: WebSocketService,
@@ -102,7 +108,10 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
         }
 
         this.ws.connect();
-
+        this.ws.onSocketConnect().subscribe(() => { this.selfOnline = true; });
+        this.ws.onSocketDisconnect().subscribe(() => {
+            this.selfOnline = false;
+        });
         this.ws.onRoleAssigned().subscribe(async (role) => {
             console.log('🎯 Final assigned role:', role);
             this.role = role;
@@ -113,9 +122,15 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
 
         this.ws.onUserJoined().subscribe((data: any) => {
             console.log('👋 User joined:', data);
+            this.markRemoteOnline(true);
+            setTimeout(() => this.attemptNegotiation(), 1000);
             setTimeout(() => {
                 this.attemptNegotiation();
             }, 1000);
+        });
+        this.ws.onUserLeft().subscribe((_data) => {
+            this.markRemoteOnline(false);
+            this.webrtcConnected = false;
         });
 
         this.ws.onResetConnection().subscribe(() => {
@@ -293,12 +308,16 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
 
             if (st === 'connected' && !this.connectionEstablished) {
                 this.connectionEstablished = true;
+                this.markRemoteOnline(true);
+                this.webrtcConnected = true;
                 console.log('🎉 WebRTC connection established!');
                 this.ws.sendConnectionEstablished(this.roomId);
+
                 this.logPeerConnectionState();
             } else if (st === 'disconnected' || st === 'failed') {
                 console.log('❌ Connection lost, attempting reset');
                 this.connectionEstablished = false;
+                this.webrtcConnected = false;
                 setTimeout(() => {
                     if (!this.isDestroyed) {
                         this.resetConnection();
@@ -378,6 +397,7 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
             console.log('🚫 No peer connection or component destroyed');
             return;
         }
+        this.markRemoteOnline(true)
 
         if (this.connectionEstablished && this.peer.connectionState === 'connected') {
             console.log('🛑 Already connected, skipping negotiation');
@@ -436,7 +456,7 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
     private setupWebSocketListeners(): void {
         this.ws.onStartNegotiation().subscribe(async () => {
             console.log('🚦 startNegotiation received');
-
+            this.markRemoteOnline(true)
             if (this.connectionEstablished && this.peer?.connectionState === 'connected') {
                 console.log('🛑 startNegotiation ignored: already connected');
                 return;
@@ -452,7 +472,7 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
 
         this.ws.onOffer().subscribe(async (offer) => {
             console.log('📦 Offer received:', offer);
-
+            this.markRemoteOnline(true)
             if (!this.peer || this.isDestroyed) {
                 console.warn('❌ Offer received before peer created or after destroy');
                 return;
@@ -501,7 +521,7 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
                 console.warn('❌ Answer received before peer created or after destroy');
                 return;
             }
-
+            this.markRemoteOnline(true)
             try {
                 console.log('✅ Processing answer...');
                 await this.peer.setRemoteDescription(answer);
@@ -529,6 +549,7 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
                 console.warn('❌ ICE received before peer created or after destroy');
                 return;
             }
+            this.markRemoteOnline(true)
 
             if (!this.remoteDescSet) {
                 this.pendingIce.push(candidate);
@@ -559,7 +580,6 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
 
     private logPeerConnectionState(): void {
         if (!this.peer) return;
-
         console.log('🔍 Peer Connection State:', {
             connectionState: this.peer.connectionState,
             signalingState: this.peer.signalingState,
@@ -658,6 +678,25 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
             localStorage.setItem('interview_user_id', userId);
         }
         return userId;
+    }
+    get selfStatusText(): string {
+        return this.selfOnline ? '🟢 Online' : '🔴 Offline';
+    }
+
+    get remoteStatusText(): string {
+        if (!this.remoteOnline && !this.webrtcConnected) return '🔴 Offline';
+        if (this.remoteOnline && !this.webrtcConnected)  return '🟡 Connecting…';
+        return '🟢 Online';
+    }
+
+    get remoteStatusClass(): string {
+        if (!this.remoteOnline && !this.webrtcConnected) return 'offline';
+        if (this.remoteOnline && !this.webrtcConnected)  return 'connecting';
+        return 'online';
+    }
+
+    get selfStatusClass(): string {
+        return this.selfOnline ? 'online' : 'offline';
     }
 
 
