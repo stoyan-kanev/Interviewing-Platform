@@ -45,7 +45,8 @@ class InterviewRoomDetail(APIView):
 
     def delete(self, request, id):
         room = self.get_object(request, id)
-        room.delete()
+        room.is_closed = True
+        room.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

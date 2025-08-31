@@ -27,7 +27,15 @@ export class InterviewLobbyComponent implements OnInit {
         this.http
             .get<any>(`http://localhost:8000/interview-rooms/public/${this.roomId}/`)
             .subscribe({
-                next: (data) => (this.roomName = data.name),
+                next: (data) => {
+                    if(data.is_closed){
+                        this.router.navigate(['/']);
+                        return;
+                    }
+
+
+                    this.roomName = data.name;
+                },
                 error: () => this.router.navigate(['/']),
             });
     }

@@ -1,10 +1,11 @@
 import { Component, ElementRef, OnInit, AfterViewInit, ViewChild, OnDestroy } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import { WebSocketService } from '../services/websocket';
 import { NgClass} from '@angular/common';
 import {SharedCodeEditorComponent} from '../code-editor/code-editor';
 import {InterviewNotesComponent} from '../interview-notes/interview-notes';
 import {AuthService} from '../services/auth';
+import {InterviewsService} from '../services/interview.service';
 
 @Component({
     selector: 'app-live-interview',
@@ -52,7 +53,7 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
     private localStream: MediaStream = new MediaStream();
     private remoteStream!: MediaStream;
     roomId!: string;
-
+    roomRealId!: string;
     private pendingIce: RTCIceCandidateInit[] = [];
     private remoteDescSet = false;
 
@@ -76,7 +77,9 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
     }
     constructor(
         private route: ActivatedRoute,
+        private router: Router,
         private ws: WebSocketService,
+        private interviewService : InterviewsService,
         private auth: AuthService,
     ) {
         this.viewReady = new Promise<void>(res => (this.resolveViewReady = res));
@@ -93,8 +96,13 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
         console.log('👤 Candidate Name:', this.candidateName);
 
         const room = await this.fetchRoom(this.roomId).catch(() => null);
+        if (!room || room.is_closed){
+            await this.router.navigate(['/']);
+            return;
+        }
         const me = await this.fetchMeOrNull().catch(() => null);
 
+        this.roomRealId = room.id
         console.log('🏢 Room data:', room);
         console.log('👤 User data:', me);
 
@@ -723,4 +731,18 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
         console.log('🔍 Debug Info:', this.debugInfo);
         this.logPeerConnectionState();
     }
+
+    closeMeet() {
+        this.interviewService.closeRoom(this.roomRealId).subscribe({
+            next: () => {
+                console.log('✅ Interview closed');
+                this.cleanup();
+                this.router.navigate(['/']);
+            },
+            error: (err) => {
+                console.error('❌ Close meet failed', err);
+            }
+        });
+    }
+
 }

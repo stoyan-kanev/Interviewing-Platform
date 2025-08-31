@@ -20,7 +20,7 @@ export type CreateInterviewDto = {
 @Injectable({ providedIn: 'root' })
 export class InterviewsService {
     private http = inject(HttpClient);
-    private apiUrl = 'http://localhost:8000/';
+    private apiUrl = 'http://localhost:8000';
 
 
     getRooms(): Observable<Room[]> {
@@ -31,9 +31,10 @@ export class InterviewsService {
         return this.http.post<Room>(`${this.apiUrl}/interview-rooms/`, { name }, { withCredentials: true });
     }
 
-    createInterview(dto: CreateInterviewDto) {
-        return this.http.post(`${this.apiUrl}/interviews/`, dto, { withCredentials: true });
+
+    closeRoom(id: string) {
+        return this.http.delete(`${this.apiUrl}/interview-rooms/` + id+'/');
     }
 
-    
+
 }
