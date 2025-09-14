@@ -11,6 +11,7 @@ import {
     filter,
 } from 'rxjs';
 import { User } from './user.interface';
+import {Router} from '@angular/router';
 
 function isUser(u: User | null): u is User {
     return u !== null;
@@ -22,7 +23,7 @@ export class AuthService {
     private currentUserSubject = new BehaviorSubject<User | null>(null);
     public currentUser$ = this.currentUserSubject.asObservable();
 
-    constructor(private http: HttpClient) {}
+    constructor(private http: HttpClient,private router : Router) {}
 
     isLoggedIn(): boolean {
         return !!this.currentUserSubject.value;

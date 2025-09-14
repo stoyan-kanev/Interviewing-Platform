@@ -76,14 +76,15 @@
                                 class="control-btn notes-btn">
                             📝 {{showNotes ? 'Hide Notes' : 'Show Notes'}}
                         </button>
+                        <button (click)="closeMeet()" class="control-btn leave-btn">
+                            Close Meet
+                        </button>
                     }
 
                     <button (click)="leaveCall()" class="control-btn leave-btn">
                         ⛔ Leave Meet
                     </button>
-                    <button (click)="closeMeet()" class="control-btn leave-btn">
-                         Close Meet
-                    </button>
+
                 </div>
             </div>
         </div>
