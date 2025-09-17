@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export type Room = {
+    updated_at: string;
     id: number;
     room_id: string;
     name: string;
