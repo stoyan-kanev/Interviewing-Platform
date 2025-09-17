@@ -733,7 +733,7 @@ export class LiveInterviewComponent implements OnInit, AfterViewInit, OnDestroy 
     }
 
     closeMeet() {
-        this.interviewService.closeRoom(this.roomRealId).subscribe({
+        this.interviewService.closeInterview(Number(this.roomRealId)).subscribe({
             next: () => {
                 console.log('✅ Interview closed');
                 this.cleanup();

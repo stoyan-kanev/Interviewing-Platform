@@ -45,15 +45,13 @@ class InterviewRoomDetail(APIView):
 
     def delete(self, request, id):
         room = self.get_object(request, id)
-        room.is_closed = True
-        room.save()
+        room.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-
-class InterviewRoomPublicAccess(APIView):
+class InterviewRoomPublicAccess(APIView):gi
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, room_id):
-        room = get_object_or_404(Room, room_id=room_id)
+        room = get_object_or_404(Room, room_id=room_id, is_closed=False)
         serializer = PublicInterviewRoomSerializer(room)
         return Response(serializer.data, status=status.HTTP_200_OK)

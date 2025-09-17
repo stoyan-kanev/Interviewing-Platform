@@ -1,54 +1,68 @@
 <div class="flex justify-end m-2 pr-4">
     <button
-        (click)="showDialog = true"
+        (click)="openCreate()"
         class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
     >
         Create Room
     </button>
-
 </div>
 
-<!--Interview dashboard-->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
     @for (room of userInterviewRooms; track room.id) {
-        <div
-            class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 flex flex-col justify-between transition hover:shadow-lg"
-        >
+        <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 flex flex-col justify-between transition hover:shadow-lg">
             <div>
-                <a
-                    routerLink="/{{room.room_id}}"
-                    class="text-lg font-semibold text-blue-600 hover:underline "
-                >
-                    {{ room.name }}
-                </a>
+                @if (room.is_closed) {
+                    <p class="text-blue-600 text-lg font-semibold">{{ room.name }}</p>
+                } @else {
+                    <a routerLink="/{{room.room_id}}" class="text-lg font-semibold text-blue-600 hover:underline">
+                        {{ room.name }}
+                    </a>
+                }
+
+
                 <p class="text-sm text-gray-500 mt-1">
                     Last Update: {{ room.updated_at | date }}
+                </p>
+                <p class="text-xs mt-1"
+                   [class.text-green-600]="!room.is_closed"
+                   [class.text-amber-600]="room.is_closed">
+                    Status: {{ room.is_closed ? 'Closed' : 'Open' }}
                 </p>
             </div>
 
             <div class="flex justify-end gap-2 mt-4">
                 <button
+                    (click)="onEdit(room)"
                     class="px-3 py-1 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition"
-                >
-                    Edit
-                </button>
+                >Edit</button>
+
                 <button
-                    class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                    (click)="onToggleClose(room)"
+                    class="px-3 py-1 rounded transition"
+                    [ngClass]="room.is_closed
+            ? 'bg-amber-500 text-white hover:bg-amber-600'
+            : 'bg-green-500 text-white hover:bg-green-600'"
                 >
-                    Delete
+                    {{ room.is_closed ? 'Open' : 'Close' }}
                 </button>
+
+                <button
+                    (click)="onDelete(room)"
+                    class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                >Delete</button>
             </div>
         </div>
     }
 </div>
 
-
-
 @if (showDialog) {
     <ng-container *ngComponentOutlet="RoomDialogComponent;
-    inputs: {
-      close: closeDialog,
-      onSuccess: handleRoomCreated
-    }">
+  inputs: {
+    close: closeDialog,
+    onSuccess: handleRoomSaved,
+    mode: selectedRoom ? 'edit' : 'create',
+    room: selectedRoom
+  }">
     </ng-container>
+
 }

@@ -1,8 +1,10 @@
 <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
     <div class="bg-white text-black dark:bg-gray-900 dark:text-white p-6 rounded-lg shadow-xl w-full max-w-md">
-        <h2 class="text-xl font-semibold mb-4">Create Interview Room</h2>
+        <h2 class="text-xl font-semibold mb-4">
+            {{ mode === 'edit' ? 'Edit Interview Room' : 'Create Interview Room' }}
+        </h2>
 
-        <form [formGroup]="form" (ngSubmit)="create()" class="space-y-4">
+        <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
             <div>
                 <label class="block text-sm mb-1">Room name</label>
                 <input
@@ -18,7 +20,8 @@
             </div>
 
             <div class="flex justify-end gap-2 pt-2">
-                <button type="button" (click)="close()" class="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600">
+                <button type="button" (click)="close()"
+                        class="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600">
                     Cancel
                 </button>
                 <button
@@ -26,7 +29,7 @@
                     [disabled]="form.invalid || loading"
                     class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50"
                 >
-                    {{ loading ? 'Saving…' : 'Save' }}
+                    {{ loading ? 'Saving…' : (mode === 'edit' ? 'Save Changes' : 'Create') }}
                 </button>
             </div>
         </form>

@@ -8,6 +8,7 @@ export type Room = {
     room_id: string;
     name: string;
     created_at: string;
+    is_closed: boolean;
 };
 
 export type CreateInterviewDto = {
@@ -32,10 +33,16 @@ export class InterviewsService {
         return this.http.post<Room>(`${this.apiUrl}/interview-rooms/`, { name }, { withCredentials: true });
     }
 
-
-    closeRoom(id: string) {
-        return this.http.delete(`${this.apiUrl}/interview-rooms/` + id+'/');
+    updateRoom(id: number, data: Partial<Pick<Room, 'name' | 'is_closed'>>): Observable<Room> {
+        return this.http.patch<Room>(`${this.apiUrl}/interview-rooms/${id}/`, data, { withCredentials: true });
     }
 
+    closeInterview(id: number, closed = true): Observable<Room> {
+        return this.updateRoom(id, { is_closed: closed }); // или { is_delete: closed }
+    }
+
+    deleteRoom(id: number): Observable<void> {
+        return this.http.delete<void>(`${this.apiUrl}/interview-rooms/${id}/`, { withCredentials: true });
+    }
 
 }
