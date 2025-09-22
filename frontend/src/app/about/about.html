@@ -1,13 +1,55 @@
-<div class="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white px-6">
-    <h1 class="text-4xl font-bold mb-4">About Us</h1>
-    <p class="text-lg text-gray-300 max-w-2xl text-center leading-relaxed">
-        Welcome to our platform! This is where your interview preparation, live coding, and collaboration happen in one place.
-        We focus on creating a smooth and productive environment for both interviewers and candidates.
-    </p>
+<div class="relative overflow-hidden">
+    <!-- същият градиент като в Home -->
+    <div class="absolute inset-0 -z-10 bg-gradient-to-b from-indigo-600/15 via-sky-500/10 to-transparent dark:from-indigo-400/10 dark:via-sky-400/10"></div>
 
-    <div class="mt-6">
-        <a routerLink="/" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg transition">
-            Back to Home
-        </a>
-    </div>
+    <!-- Header -->
+    <header class="container mx-auto px-4 py-8">
+        <a routerLink="/" class="text-sm text-indigo-600 hover:underline">← Back to home</a>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold tracking-tight">About Interview Platform</h1>
+        <p class="mt-2 text-black-600  max-w-2xl">
+            We help teams run fair, structured technical interviews with less hassle and more signal.
+        </p>
+    </header>
+
+    <main class="container mx-auto px-4 pb-16 space-y-12">
+
+        <!-- Mission -->
+        <section class="rounded-2xl border border-gray-200 bg-gradient-to-r from-indigo-600 to-sky-500  backdrop-blur p-6 shadow-sm hover:shadow">
+            <h2 class="text-xl font-semibold">Our mission</h2>
+            <p class="mt-2 text-gray-600 dark:text-gray-300">
+                Make interviews human, focused, and data-driven. The platform combines real-time collaboration
+                with structured note-taking and AI summaries to reduce bias and speed up decisions.
+            </p>
+        </section>
+
+        <!-- How it works -->
+        <section class="grid md:grid-cols-3 gap-6">
+            <div class="rounded-2xl border border-gray-200 bg-gradient-to-r from-indigo-600 to-sky-500  backdrop-blur p-6 shadow-sm hover:shadow">
+                <h3 class="font-semibold">1) Live session</h3>
+                <p class="mt-1 text-gray-600 dark:text-gray-300">Start a room, share a link, and talk face-to-face via WebRTC.</p>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-gradient-to-r from-indigo-600 to-sky-500  backdrop-blur p-6 shadow-sm hover:shadow">
+                <h3 class="font-semibold">2) Code together</h3>
+                <p class="mt-1 text-gray-600 dark:text-gray-300">Use the shared editor to solve tasks while you capture structured notes.</p>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-gradient-to-r from-indigo-600 to-sky-500  backdrop-blur p-6 shadow-sm hover:shadow">
+                <h3 class="font-semibold">3) Decide</h3>
+                <p class="mt-1 text-gray-600 dark:text-gray-300">Review notes & auto-summaries; recommend with confidence.</p>
+            </div>
+        </section>
+
+        <!-- Tech & Security -->
+        <section class="rounded-2xl border border-gray-200 bg-gradient-to-r from-indigo-600 to-sky-500  backdrop-blur p-6 shadow-sm hover:shadow">
+            <h2 class="text-xl font-semibold">Tech & Security</h2>
+            <ul class="mt-3 space-y-2 list-disc pl-6 text-gray-700 dark:text-gray-200">
+                <li>Frontend: Angular 17+, Tailwind CSS</li>
+                <li>Backend: Django + DRF, JWT in HttpOnly cookies</li>
+                <li>WebSocket: Node.js + Socket.IO</li>
+                <li>DB: PostgreSQL • Deployment: Docker + NGINX</li>
+                <li>Private interview rooms with role-based access; per-interviewer notes</li>
+            </ul>
+        </section>
+
+
+    </main>
 </div>

@@ -1,0 +1,179 @@
+<!-- Hero -->
+<div class="relative overflow-hidden">
+    <div class="absolute inset-0 -z-10 bg-gradient-to-b from-indigo-600/15 via-sky-500/10 to-transparent dark:from-indigo-400/10 dark:via-sky-400/10"></div>
+
+
+    <section class="container mx-auto px-4 py-10 md:py-20">
+        <div class="grid md:grid-cols-2 items-center gap-10">
+            <div>
+                <h1 class="text-4xl md:text-6xl font-extrabold leading-tight">
+                    Run live, structured interviews
+                    <span class="text-indigo-600">without the chaos</span>.
+                </h1>
+                <p class="mt-4 text-lg text-gray-600 dark:text-gray-300">
+                    Real-time rooms, shared code editor, notes, and instant feedback — all in one place.
+                    Hire faster with signal, not noise.
+                </p>
+
+                <div class="mt-6 flex flex-wrap gap-3">
+                    <a routerLink="/register" class="px-5 py-3 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition shadow">
+                        Join us
+                    </a>
+                    <a routerLink="/about" class="px-5 py-3 rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                        Learn more
+                    </a>
+                </div>
+
+                <div class="mt-6 text-sm text-gray-500 dark:text-gray-400">
+                    No installs • Works in the browser • Secure by default
+                </div>
+            </div>
+
+            <!-- Right mock / illustration -->
+            <div class="rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl bg-white/70 dark:bg-gray-900/60 backdrop-blur p-4">
+                <div class="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800">
+                        <span class="w-3 h-3 rounded-full bg-red-400"></span>
+                        <span class="w-3 h-3 rounded-full bg-amber-400"></span>
+                        <span class="w-3 h-3 rounded-full bg-green-400"></span>
+                        <span class="ml-3 text-xs text-gray-500 dark:text-gray-400">Live Room • Code • Notes</span>
+                    </div>
+                    <div class="p-4 grid md:grid-cols-2 gap-4 bg-white dark:bg-gray-900">
+            <pre class="text-xs md:text-sm rounded-lg p-4 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 overflow-auto leading-relaxed">
+<span class="opacity-60">// coding task</span>
+function twoSum(nums, target) {{
+                const map = new Map();
+                for (let i = 0; i &lt; nums.length; i++) {
+    const need = target - nums[i];
+    if (map.has(need)) return [map.get(need), i];
+    map.set(nums[i], i);
+  }
+  return [];
+}
+</pre>
+                        <div class="space-y-3">
+                            <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                                <div class="text-xs text-gray-500">Notes</div>
+                                <div class="text-sm mt-1">✅ Clear problem solving<br/>🧠 Strong JS fundamentals<br/>💬 Communicates trade-offs</div>
+                            </div>
+                            <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                                <div class="text-xs text-gray-500">Decision</div>
+                                <div class="text-sm mt-1">Recommendation: <span class="font-medium text-green-600">Strong Hire</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!--&lt;!&ndash; Logos &ndash;&gt;-->
+<!--<section class="container mx-auto px-4 py-12">-->
+<!--    <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center">-->
+<!--        Trusted by teams-->
+<!--    </p>-->
+
+<!--    <div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-x-8 gap-y-6">-->
+<!--        &lt;!&ndash; Смени вътрешността на клетката с <img class="max-h-8 opacity-70 grayscale hover:opacity-100 hover:grayscale-0 transition" src="/assets/logos/brand1.svg" alt="Brand"> &ndash;&gt;-->
+<!--        <div class="h-16 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-gray-900/60 backdrop-blur shadow-sm flex items-center justify-center">-->
+<!--            <div class="h-8 w-24 rounded bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800"></div>-->
+<!--        </div>-->
+<!--        <div class="h-16 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-gray-900/60 backdrop-blur shadow-sm flex items-center justify-center">-->
+<!--            <div class="h-8 w-20 rounded bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800"></div>-->
+<!--        </div>-->
+<!--        <div class="h-16 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-gray-900/60 backdrop-blur shadow-sm flex items-center justify-center">-->
+<!--            <div class="h-8 w-16 rounded bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800"></div>-->
+<!--        </div>-->
+<!--        <div class="h-16 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-gray-900/60 backdrop-blur shadow-sm flex items-center justify-center">-->
+<!--            <div class="h-8 w-24 rounded bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800"></div>-->
+<!--        </div>-->
+<!--        <div class="h-16 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-gray-900/60 backdrop-blur shadow-sm flex items-center justify-center">-->
+<!--            <div class="h-8 w-20 rounded bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800"></div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</section>-->
+
+<!-- Features -->
+<section id="features" class="container mx-auto px-4 py-14">
+    <h2 class="text-2xl md:text-3xl font-bold text-center">
+        Everything you need for a fair, fast interview
+    </h2>
+    <div class="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="rounded-2xl border border-gray-200 bg-gradient-to-r from-indigo-600 to-sky-500  backdrop-blur p-6 shadow-sm hover:shadow">
+            <div class="w-10 h-10 rounded-full bg-indigo-600/10 text-indigo-600 grid place-items-center mb-2">💬</div>
+            <h3 class="font-semibold text-white text-lg">Live Rooms</h3>
+            <p class="mt-1 text-gray-600 dark:text-gray-300">Private rooms with video & screenshare. One link, zero friction.</p>
+        </div>
+
+        <div class="rounded-2xl border border-gray-200 bg-gradient-to-r from-indigo-600 to-sky-500  backdrop-blur p-6 shadow-sm hover:shadow">
+            <div class="w-10 h-10 rounded-full bg-indigo-600/10 text-indigo-600 grid place-items-center mb-2">👩‍💻</div>
+            <h3 class="font-semibold text-white  text-lg">Shared Code Editor</h3>
+            <p class="mt-1 text-gray-600 dark:text-gray-300">Collaborative coding with syntax highlight and auto-sync.</p>
+        </div>
+
+        <div class="rounded-2xl border border-gray-200 bg-gradient-to-r from-indigo-600 to-sky-500  backdrop-blur p-6 shadow-sm hover:shadow">
+            <div class="w-10 h-10 rounded-full bg-indigo-600/10 text-indigo-600 grid place-items-center mb-2">📝</div>
+            <h3 class="font-semibold text-white  text-lg">Structured Notes</h3>
+            <p class="mt-1 text-gray-600 dark:text-gray-300">Capture General / Technical / Questions / Decision in one place.</p>
+        </div>
+
+        <div class="rounded-2xl border border-gray-200 bg-gradient-to-r from-indigo-600 to-sky-500  backdrop-blur p-6 shadow-sm hover:shadow">
+            <div class="w-10 h-10 rounded-full bg-indigo-600/10 text-indigo-600 grid place-items-center mb-2">⚡</div>
+            <h3 class="font-semibold text-white  text-lg">AI Feedback</h3>
+            <p class="mt-1 text-gray-600 dark:text-gray-300">Summaries and red flags so you focus on the signal.</p>
+        </div>
+
+        <div class="rounded-2xl border border-gray-200 bg-gradient-to-r from-indigo-600 to-sky-500  backdrop-blur p-6 shadow-sm hover:shadow">
+            <div class="w-10 h-10 rounded-full bg-indigo-600/10 text-indigo-600 grid place-items-center mb-2">🔒</div>
+            <h3 class="font-semibold text-white  text-lg">Secure by default</h3>
+            <p class="mt-1 text-gray-600 dark:text-gray-300">JWT auth, HttpOnly cookies, role-based access, public UUID links.</p>
+        </div>
+
+        <div class="rounded-2xl border border-gray-200 bg-gradient-to-r from-indigo-600 to-sky-500  backdrop-blur p-6 shadow-sm hover:shadow">
+            <div class="w-10 h-10 rounded-full bg-indigo-600/10 text-indigo-600 grid place-items-center mb-2">📅</div>
+            <h3 class="font-semibold text-white  text-lg">Scheduling</h3>
+            <p class="mt-1 text-gray-600 dark:text-gray-300">Plan interviews, track status, never miss a candidate.</p>
+        </div>
+    </div>
+</section>
+
+<!-- How it works -->
+<section class="container mx-auto px-4 py-14">
+    <h2 class="text-2xl md:text-3xl font-bold text-center">How it works</h2>
+    <ol class="mt-8 grid md:grid-cols-3 gap-6">
+        <li class="rounded-2xl border border-gray-200 bg-gradient-to-r from-indigo-600 to-sky-500  backdrop-blur p-6 shadow-sm hover:shadow">
+            <span class="absolute -top-3 -left-3 w-8 h-8 rounded-full bg-indigo-600 text-white grid place-items-center font-semibold shadow">1</span>
+            <h4 class="font-semibold text-white ">Create a Room</h4>
+            <p class="mt-1 text-gray-600 dark:text-gray-300">Name it, invite a candidate, choose a template.</p>
+        </li>
+        <li class="rounded-2xl border border-gray-200 bg-gradient-to-r from-indigo-600 to-sky-500  backdrop-blur p-6 shadow-sm hover:shadow">
+            <span class="absolute -top-3 -left-3 w-8 h-8 rounded-full bg-indigo-600 text-white grid place-items-center font-semibold shadow">2</span>
+            <h4 class="font-semibold text-white ">Collaborate live</h4>
+            <p class="mt-1 text-gray-600 dark:text-gray-300">Video + shared editor + notes, all synced.</p>
+        </li>
+        <li class="rounded-2xl border border-gray-200 bg-gradient-to-r from-indigo-600 to-sky-500  backdrop-blur p-6 shadow-sm hover:shadow">
+            <span class="absolute -top-3 -left-3 w-8 h-8 rounded-full bg-indigo-600 text-white grid place-items-center font-semibold shadow">3</span>
+            <h4 class="font-semibold text-white ">Decide with confidence</h4>
+            <p class="mt-1 text-gray-600 dark:text-gray-300">Use structured notes and AI insights to recommend.</p>
+        </li>
+    </ol>
+</section>
+
+
+
+
+<!-- CTA -->
+<section class="container mx-auto px-4 py-14">
+    <div class="rounded-2xl p-8 md:p-12 text-center bg-gradient-to-r from-indigo-600 to-sky-500 text-white shadow-lg">
+        <h3 class="text-2xl md:text-3xl font-bold">Ready to run your next interview?</h3>
+        <p class="mt-2 opacity-90">Create a room in seconds and invite a candidate.</p>
+        <div class="mt-6">
+            <a routerLink="/dashboard" class="px-6 py-3 rounded-lg bg-white/90 text-indigo-700 hover:bg-white transition">Go to Dashboard</a>
+        </div>
+    </div>
+</section>
+
+<footer class="container mx-auto px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+    © {{ currentYear }} Interview Platform. All rights reserved.
+</footer>
