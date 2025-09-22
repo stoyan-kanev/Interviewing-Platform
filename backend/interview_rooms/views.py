@@ -48,7 +48,7 @@ class InterviewRoomDetail(APIView):
         room.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-class InterviewRoomPublicAccess(APIView):gi
+class InterviewRoomPublicAccess(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, room_id):

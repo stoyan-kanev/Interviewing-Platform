@@ -141,12 +141,11 @@ GENERAL:
     }
 
     private setupAutoSave(): void {
-        // Auto-save every 10 seconds when there are changes
         this.notesChange$.pipe(
             debounceTime(10000),
             takeUntil(this.destroy$)
         ).subscribe(() => {
-            this.saveNotes(true); // true = silent save
+            this.saveNotes(true);
         });
     }
 
@@ -162,7 +161,6 @@ GENERAL:
                             this.notes = { ...this.notes, ...parsedNotes };
                             console.log('📋 Loaded existing notes');
                         } catch (e) {
-                            // Legacy format - put in general notes
                             this.notes.general = note.content;
                         }
                     }
@@ -179,7 +177,6 @@ GENERAL:
 
         const template = this.noteTemplates.find(t => t.id === templateId);
         if (template) {
-            // Add template to general notes (don't overwrite existing content)
             const currentContent = this.notes.general;
             this.notes.general = currentContent ?
                 `${currentContent}\n\n--- ${template.name} Template ---\n${template.content}` :
@@ -188,7 +185,6 @@ GENERAL:
             this.activeTab = 'general';
             this.onNotesChange();
 
-            // Reset select
             event.target.value = '';
         }
     }
@@ -212,7 +208,6 @@ GENERAL:
                 break;
         }
 
-        // Add to current tab's notes
         const currentTabContent = this.getCurrentTabContent();
         this.setCurrentTabContent(currentTabContent + noteText);
         this.onNotesChange();

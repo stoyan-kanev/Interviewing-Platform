@@ -14,7 +14,7 @@
                 @if (room.is_closed) {
                     <p class="text-blue-600 text-lg font-semibold">{{ room.name }}</p>
                 } @else {
-                    <a routerLink="/{{room.room_id}}" class="text-lg font-semibold text-blue-600 hover:underline">
+                    <a routerLink="/live/{{room.room_id}}" class="text-lg font-semibold text-blue-600 hover:underline">
                         {{ room.name }}
                     </a>
                 }
@@ -35,7 +35,11 @@
                     (click)="onEdit(room)"
                     class="px-3 py-1 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition"
                 >Edit</button>
-
+                <button
+                    (click)="openNotes(room)"
+                    class="px-3 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600 transition">
+                    Notes
+                </button>
                 <button
                     (click)="onToggleClose(room)"
                     class="px-3 py-1 rounded transition"
@@ -54,7 +58,80 @@
         </div>
     }
 </div>
+@if (notesOpen) {
+    <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+        <div class="bg-white text-black dark:bg-gray-900 dark:text-white w-full max-w-3xl rounded-xl shadow-2xl p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold">Notes — {{ selectedRoom?.name }}</h2>
+                <button (click)="closeNotes()"
+                        class="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600">
+                    Close
+                </button>
+            </div>
 
+            @if (notesLoading) {
+                <div class="py-10 text-center">Loading…</div>
+            } @else if (notesError) {
+                <div class="py-3 text-red-500">{{ notesError }}</div>
+            } @else {
+                <form [formGroup]="notesForm" (ngSubmit)="saveNotes()" class="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm mb-1">General</label>
+                            <textarea formControlName="general" rows="5"
+                                      class="w-full rounded border p-2 bg-transparent whitespace-pre-wrap"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">Technical</label>
+                            <textarea formControlName="technical" rows="5"
+                                      class="w-full rounded border p-2 bg-transparent whitespace-pre-wrap"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">Questions</label>
+                            <textarea formControlName="questions" rows="4"
+                                      class="w-full rounded border p-2 bg-transparent whitespace-pre-wrap"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">Decision</label>
+                            <textarea formControlName="decision" rows="4"
+                                      class="w-full rounded border p-2 bg-transparent whitespace-pre-wrap"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="grid md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm mb-1">Rating (0–5)</label>
+                            <input type="number" min="0" max="5" formControlName="rating"
+                                   class="w-full rounded border p-2 bg-transparent">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm mb-1">Recommendation</label>
+                            <select formControlName="recommendation" class="w-full rounded border p-2 bg-transparent">
+                                <option value="">—</option>
+                                <option value="strong_hire">Strong Hire</option>
+                                <option value="hire">Hire</option>
+                                <option value="leaning_hire">Leaning Hire</option>
+                                <option value="no_hire">No Hire</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" (click)="closeNotes()"
+                                class="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                                [disabled]="notesLoading || notesForm.invalid"
+                                class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50">
+                            {{ notesLoading ? 'Saving…' : 'Save' }}
+                        </button>
+                    </div>
+                </form>
+            }
+        </div>
+    </div>
+}
 @if (showDialog) {
     <ng-container *ngComponentOutlet="RoomDialogComponent;
   inputs: {
