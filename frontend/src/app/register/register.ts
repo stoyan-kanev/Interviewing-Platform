@@ -3,12 +3,14 @@ import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/
 import {AuthService} from '../services/auth';
 import {Router} from '@angular/router';
 import {strongPasswordValidator} from './passwordValidator';
+import {NgClass} from '@angular/common';
 
 @Component({
     selector: 'app-register',
     standalone: true,
     imports: [
-        ReactiveFormsModule
+        ReactiveFormsModule,
+        NgClass
     ],
     templateUrl: './register.html',
     styleUrl: './register.css'

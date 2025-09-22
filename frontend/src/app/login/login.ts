@@ -2,11 +2,13 @@ import {Component} from '@angular/core';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {AuthService} from '../services/auth';
 import {Router} from '@angular/router';
+import {NgClass} from '@angular/common';
 
 @Component({
     selector: 'app-login',
     imports: [
-        ReactiveFormsModule
+        ReactiveFormsModule,
+        NgClass
     ],
     templateUrl: './login.html',
     styleUrl: './login.css'
