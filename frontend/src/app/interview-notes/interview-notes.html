@@ -1,155 +1,208 @@
 @if (isHost) {
-    <div class="notes-container">
-        <div class="notes-header">
-            <div class="header-title">
-                <h3>📝 Interview Notes</h3>
-                @if (candidateName) {
-                    <span class="candidate-info">
-            Candidate: {{ candidateName }}
-          </span>
-                }
-            </div>
+    <div class="relative overflow-hidden">
+        <!-- фон като Home -->
+        <div class="absolute inset-0 -z-10 bg-gradient-to-b from-indigo-600/15 via-sky-500/10 to-transparent dark:from-indigo-400/10 dark:via-sky-400/10"></div>
 
-            <div class="header-controls">
-                <select (change)="loadTemplate($event)" class="template-selector">
-                    <option value="">Choose template...</option>
-                    @for (template of noteTemplates; track template.id) {
-                        <option [value]="template.id">
-                            {{ template.name }}
-                        </option>
-                    }
-                </select>
+        <section class="container mx-auto px-4 py-4">
+            <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/70 backdrop-blur shadow-sm">
 
-                <button (click)="saveNotes()"
-                        [disabled]="isSaving"
-                        class="save-btn"
-                        [class.saving]="isSaving">
-                    {{ isSaving ? '💾 Saving...' : '💾 Save' }}
-                </button>
-
-                <button (click)="toggleNotesPanel()" class="toggle-btn">
-                    {{ showNotes ? '➖' : '➕' }}
-                </button>
-            </div>
-        </div>
-
-        <div class="notes-content" [class.collapsed]="!showNotes">
-
-            <!-- Quick Actions -->
-            <div class="quick-actions">
-                @for (action of quickActions; track action.id) {
-                    <button (click)="addQuickNote(action)"
-                            class="quick-action-btn"
-                            [class]="action.type">
-                        {{ action.emoji }} {{ action.label }}
-                    </button>
-                }
-            </div>
-
-            <!-- Notes Tabs -->
-            <div class="notes-tabs">
-                @for (tab of noteTabs; track tab.id) {
-                    <button (click)="activeTab = tab.id"
-                            class="tab-btn"
-                            [class.active]="activeTab === tab.id">
-                        {{ tab.emoji }} {{ tab.name }}
-                    </button>
-                }
-            </div>
-
-            <!-- Notes Editor -->
-            <div class="notes-editor">
-                @if (activeTab === 'general') {
-                    <div class="tab-content">
-                        <label>General Notes:</label>
-                        <textarea
-                            [(ngModel)]="notes.general"
-                            (ngModelChange)="onNotesChange()"
-                            placeholder="Overall impression, communication skills, personality fit..."
-                            rows="6"
-                            class="notes-textarea">
-            </textarea>
+                <!-- Header -->
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 md:px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <div class="min-w-0">
+                        <h3 class="text-base md:text-lg font-semibold leading-none">📝 Interview Notes</h3>
+                        @if (candidateName) {
+                            <span class="mt-1 block text-xs text-gray-500 dark:text-gray-400 truncate">
+                Candidate: {{ candidateName }}
+              </span>
+                        }
                     </div>
-                }
 
-                @if (activeTab === 'technical') {
-                    <div class="tab-content">
-                        <label>Technical Assessment:</label>
-                        <textarea
-                            [(ngModel)]="notes.technical"
-                            (ngModelChange)="onNotesChange()"
-                            placeholder="Coding skills, problem-solving approach, technical knowledge..."
-                            rows="6"
-                            class="notes-textarea">
-            </textarea>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <select
+                            (change)="loadTemplate($event)"
+                            class="min-w-[160px] rounded-lg border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-800/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                            <option value="">Choose template...</option>
+                            @for (template of noteTemplates; track template.id) {
+                                <option [value]="template.id">{{ template.name }}</option>
+                            }
+                        </select>
+
+                        <button
+                            (click)="saveNotes()"
+                            [disabled]="isSaving"
+                            class="rounded-lg px-3 py-2 text-sm shadow transition focus-visible:outline-none focus-visible:ring-2"
+                            [ngClass]="isSaving
+                ? 'bg-amber-400 text-black hover:bg-amber-500 focus-visible:ring-amber-500'
+                : 'bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:ring-emerald-500'"
+                        >
+                            {{ isSaving ? '💾 Saving...' : '💾 Save' }}
+                        </button>
+
+                        <button
+                            (click)="toggleNotesPanel()"
+                            class="rounded-lg px-3 py-2 text-sm bg-indigo-600 text-white hover:bg-indigo-700 transition shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                            [attr.aria-expanded]="showNotes"
+                            [attr.aria-label]="showNotes ? 'Collapse notes' : 'Expand notes'"
+                        >
+                            {{ showNotes ? '➖' : '➕' }}
+                        </button>
                     </div>
-                }
-
-                @if (activeTab === 'questions') {
-                    <div class="tab-content">
-                        <label>Questions & Answers:</label>
-                        <textarea
-                            [(ngModel)]="notes.questions"
-                            (ngModelChange)="onNotesChange()"
-                            placeholder="Key questions asked and candidate responses..."
-                            rows="6"
-                            class="notes-textarea">
-            </textarea>
-                    </div>
-                }
-
-                @if (activeTab === 'decision') {
-                    <div class="tab-content">
-                        <label>Final Decision:</label>
-
-                        <div class="rating-section">
-                            <label>Overall Rating:</label>
-                            <div class="rating-stars">
-                                @for (star of [1,2,3,4,5]; track star) {
-                                    <button (click)="setRating(star)"
-                                            class="star-btn"
-                                            [class.active]="notes.rating >= star">
-                                        ⭐
-                                    </button>
-                                }
-                                <span class="rating-text">{{ getRatingText() }}</span>
-                            </div>
-                        </div>
-
-                        <div class="recommendation-section">
-                            <label>Recommendation:</label>
-                            <select [(ngModel)]="notes.recommendation"
-                                    (ngModelChange)="onNotesChange()"
-                                    class="recommendation-select">
-                                <option value="">Select recommendation...</option>
-                                <option value="strong_hire">🟢 Strong Hire</option>
-                                <option value="hire">🟡 Hire</option>
-                                <option value="no_hire">🔴 No Hire</option>
-                                <option value="strong_no_hire">⛔ Strong No Hire</option>
-                            </select>
-                        </div>
-
-                        <textarea
-                            [(ngModel)]="notes.decision"
-                            (ngModelChange)="onNotesChange()"
-                            placeholder="Final thoughts, concerns, reasons for recommendation..."
-                            rows="4"
-                            class="notes-textarea">
-            </textarea>
-                    </div>
-                }
-            </div>
-
-            <!-- Auto-save indicator -->
-            @if (lastSaved) {
-                <div class="save-status">
-          <span class="save-indicator"
-                [class.success]="saveStatus === 'success'"
-                [class.error]="saveStatus === 'error'">
-            {{ saveStatusText }}
-          </span>
                 </div>
-            }
-        </div>
+
+                <!-- Content (collapsible) -->
+                <div
+                    class="transition-all duration-300 overflow-hidden"
+                    [ngClass]="showNotes ? 'max-h-[300vh] opacity-100' : 'max-h-0 opacity-0 pointer-events-none'"
+                >
+
+                    <!-- Quick Actions -->
+                    <div class="flex flex-wrap gap-2 px-4 md:px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/50">
+                        @for (action of quickActions; track action.id) {
+                            <button
+                                (click)="addQuickNote(action)"
+                                class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-white shadow transition"
+                                [ngClass]="{
+                  'bg-emerald-600/90 hover:bg-emerald-600': action.type === 'positive',
+                  'bg-rose-600/90 hover:bg-rose-600': action.type === 'negative',
+                  'bg-sky-600/90 hover:bg-sky-600': action.type === 'neutral',
+                  'bg-gray-700/90 hover:bg-gray-700': !action.type
+                }"
+                            >
+                                {{ action.emoji }} {{ action.label }}
+                            </button>
+                        }
+                    </div>
+
+                    <!-- Tabs -->
+                    <div class="flex border-b border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/50">
+                        @for (tab of noteTabs; track tab.id) {
+                            <button
+                                (click)="activeTab = tab.id"
+                                class="flex-1 text-center px-4 py-3 text-sm font-medium transition"
+                                [ngClass]="activeTab === tab.id
+                  ? 'bg-white/80 dark:bg-gray-800/80 text-indigo-600 border-b-2 border-indigo-500'
+                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'"
+                            >
+                                {{ tab.emoji }} {{ tab.name }}
+                            </button>
+                        }
+                    </div>
+
+                    <!-- Editor -->
+                    <div class="px-4 md:px-6 py-4 space-y-6">
+
+                        @if (activeTab === 'general') {
+                            <div class="space-y-2 animate-[fadeIn_.3s_ease]">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">General Notes</label>
+                                <textarea
+                                    [(ngModel)]="notes.general"
+                                    (ngModelChange)="onNotesChange()"
+                                    rows="8"
+                                    class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white/70 dark:bg-gray-800/70 p-3 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    placeholder="Overall impression, communication, culture fit…"
+                                ></textarea>
+                            </div>
+                        }
+
+                        @if (activeTab === 'technical') {
+                            <div class="space-y-2 animate-[fadeIn_.3s_ease]">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Technical Assessment</label>
+                                <textarea
+                                    [(ngModel)]="notes.technical"
+                                    (ngModelChange)="onNotesChange()"
+                                    rows="8"
+                                    class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white/70 dark:bg-gray-800/70 p-3 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    placeholder="Coding skills, problem solving, system knowledge…"
+                                ></textarea>
+                            </div>
+                        }
+
+                        @if (activeTab === 'questions') {
+                            <div class="space-y-2 animate-[fadeIn_.3s_ease]">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Questions & Answers</label>
+                                <textarea
+                                    [(ngModel)]="notes.questions"
+                                    (ngModelChange)="onNotesChange()"
+                                    rows="6"
+                                    class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white/70 dark:bg-gray-800/70 p-3 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    placeholder="Key questions asked and candidate responses…"
+                                ></textarea>
+                            </div>
+                        }
+
+                        @if (activeTab === 'decision') {
+                            <div class="space-y-4 animate-[fadeIn_.3s_ease]">
+                                <!-- Rating -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Overall Rating</label>
+                                    <div class="mt-1 flex items-center gap-1.5">
+                                        @for (star of [1,2,3,4,5]; track star) {
+                                            <button
+                                                type="button"
+                                                (click)="setRating(star)"
+                                                class="text-2xl transition transform"
+                                                [ngClass]="notes.rating >= star
+                          ? 'opacity-100 scale-110 text-yellow-400'
+                          : 'opacity-40 hover:opacity-80 text-yellow-400'"
+                                            >
+                                                ⭐
+                                            </button>
+                                        }
+                                        <span class="ml-2 text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                      {{ getRatingText() }}
+                    </span>
+                                    </div>
+                                </div>
+
+                                <!-- Recommendation -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Recommendation</label>
+                                    <select
+                                        [(ngModel)]="notes.recommendation"
+                                        (ngModelChange)="onNotesChange()"
+                                        class="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white/70 dark:bg-gray-800/70 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    >
+                                        <option value="">Select recommendation…</option>
+                                        <option value="strong_hire">🟢 Strong Hire</option>
+                                        <option value="hire">🟡 Hire</option>
+                                        <option value="no_hire">🔴 No Hire</option>
+                                        <option value="strong_no_hire">⛔ Strong No Hire</option>
+                                    </select>
+                                </div>
+
+                                <!-- Decision note -->
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Final Notes</label>
+                                    <textarea
+                                        [(ngModel)]="notes.decision"
+                                        (ngModelChange)="onNotesChange()"
+                                        rows="5"
+                                        class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white/70 dark:bg-gray-800/70 p-3 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                        placeholder="Final thoughts, concerns, reasons for recommendation…"
+                                    ></textarea>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Auto-save status -->
+                    @if (lastSaved) {
+                        <div class="px-4 md:px-6 py-3 border-t border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/50">
+              <span
+                  class="text-xs"
+                  [ngClass]="{
+                  'text-emerald-600 dark:text-emerald-400': saveStatus === 'success',
+                  'text-rose-500 dark:text-rose-400': saveStatus === 'error',
+                  'text-gray-500 dark:text-gray-400': !saveStatus || saveStatus === 'saving'
+                }"
+              >
+                {{ saveStatusText }}
+              </span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </section>
     </div>
 }
