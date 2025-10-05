@@ -23,14 +23,14 @@
         } @else {
             <div class="grid gap-6 [grid-template-columns:repeat(auto-fit,minmax(18rem,1fr))]">
                 @for (room of userInterviewRooms; track room.id) {
-                    <div class="group rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/70 backdrop-blur p-5 shadow-sm hover:shadow-md transition flex flex-col gap-4">
+                    <div class="group rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-indigo-600/70 backdrop-blur p-5 shadow-sm hover:shadow-md transition flex flex-col gap-4">
                         <!-- Title + status -->
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
                                 @if (room.is_closed) {
-                                    <p class="truncate text-lg font-semibold text-gray-900 dark:text-gray-100">🔒 {{ room.name }}</p>
+                                    <p class="truncate text-lg font-semibold text-white dark:text-gray-100">🔒 {{ room.name }}</p>
                                 } @else {
-                                    <a routerLink="/live/{{ room.room_id }}" class="truncate text-lg font-semibold text-indigo-900 hover:underline">
+                                    <a routerLink="/live/{{ room.room_id }}" class="truncate text-lg font-semibold text-white hover:underline">
                                         {{ room.name }}
                                     </a>
                                 }
@@ -51,7 +51,7 @@
                         <div class="flex flex-wrap justify-end gap-2 pt-2">
                             <button
                                 (click)="onEdit(room)"
-                                class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-200 bg-white/60 dark:bg-gray-900/40 hover:bg-gray-50 dark:hover:bg-gray-800 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
+                                class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-200 bg-white/200 dark:bg-gray-900/40 hover:bg-gray-50 dark:hover:bg-gray-800 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
                             >
                                 Edit
                             </button>
