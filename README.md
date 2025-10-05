@@ -33,27 +33,26 @@ A modern **remote interview and hiring platform** that enables **live coding int
 
 ## 🧩 Architecture Overview
 
+```
 ┌─────────────────────┐
-│ Angular App │
+│     Angular App     │
 │ (Video, Chat, Code) │
 └────────┬────────────┘
-│ REST / WS
+         │ REST / WS
 ┌────────▼────────────┐
-│ Django Backend │ ← Business logic, JWT auth, DB
-│ (DRF + PostgreSQL) │
+│   Django Backend    │  ← Business logic, JWT auth, DB
+│ (DRF + PostgreSQL)  │
 └────────┬────────────┘
-│
+         │
 ┌────────▼────────────┐
-│ Node.js Server │ ← WebSocket signaling + sync
-│ (Socket.IO) │
+│   Node.js Server    │  ← WebSocket signaling + sync
+│    (Socket.IO)      │
 └────────┬────────────┘
-│
+         │
 ┌────────▼────────────┐
-│ Judge0 API │ ← Code execution
+│     Judge0 API      │  ← Code execution
 └─────────────────────┘
-
-yaml
-Copy code
+```
 
 ---
 
@@ -63,61 +62,60 @@ Copy code
 ```bash
 git clone https://github.com/yourusername/interview-platform.git
 cd interview-platform
-2. Backend Setup (Django)
-bash
-Copy code
+```
+
+### 2. Backend Setup (Django)
+```bash
 cd backend
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
-3. Frontend Setup (Angular)
-bash
-Copy code
+```
+
+### 3. Frontend Setup (Angular)
+```bash
 cd frontend
 npm install
 npm start
-4. WebSocket Server
-bash
-Copy code
+```
+
+### 4. WebSocket Server
+```bash
 cd ws-server
 npm install
 npm run dev
-🐳 Docker Deployment
-A ready-to-use Docker Compose setup is included.
-
-bash
-Copy code
-docker-compose up --build
-This starts:
-
-Django API (port 8000)
-
-Angular frontend (port 4200)
-
-Node.js WebSocket server (port 8001)
-
-PostgreSQL database
-
-NGINX reverse proxy
-
-🧠 Future Enhancements
-📅 Scheduling interviews with calendar integration
-
-🤖 AI interviewer assistant (question generation + code feedback)
-
-📈 Analytics and reporting dashboard
-
-🧍 Candidate profiles and CV upload
-
-👨‍💻 Author
-Stoyan Kanev
-Full-Stack Software Engineer
-🌐 stoyan-kanev.com
-
-yaml
-Copy code
+```
 
 ---
 
-Искаш ли да направя и **по-професионална версия** на README — с икони, секции "Preview", "Environment Variables" и “Contributing”?  
-(тази горе е „семпла“, както поиска — чиста и изчистена за GitHub repo).
+## 🐳 Docker Deployment
+
+A ready-to-use **Docker Compose** setup is included.
+
+```bash
+docker-compose up --build
+```
+
+This starts:
+- Django API (port 8000)
+- Angular frontend (port 4200)
+- Node.js WebSocket server (port 8001)
+- PostgreSQL database
+- NGINX reverse proxy
+
+---
+
+## 🧠 Future Enhancements
+
+- 📅 Scheduling interviews with calendar integration  
+- 🤖 AI interviewer assistant (question generation + code feedback)  
+- 📈 Analytics and reporting dashboard  
+- 🧍 Candidate profiles and CV upload  
+
+---
+
+## 👨‍💻 Author
+
+**Stoyan Kanev**  
+Full-Stack Software Engineer  
+🌐 [stoyan-kanev.com](https://stoyan-kanev.com)
