@@ -1,4 +1,4 @@
-/* Reusable cards */
+/* Reusable cards
 .card {
     @apply rounded-xl border border-gray-200 dark:border-gray-700 p-5 bg-white/70 dark:bg-gray-900/50 backdrop-blur shadow-sm hover:shadow-md transition;
 }
@@ -6,12 +6,12 @@
 .card-text { @apply text-gray-600 dark:text-gray-300 mt-1; }
 
 /* Steps */
-.step { @apply relative rounded-xl border border-gray-200 dark:border-gray-700 p-6 bg-white/70 dark:bg-gray-900/50; }
+/* .step { @apply relative rounded-xl border border-gray-200 dark:border-gray-700 p-6 bg-white/70 dark:bg-gray-900/50; }
 .step-number { @apply absolute -top-3 -left-3 w-8 h-8 rounded-full bg-indigo-600 text-white grid place-items-center font-semibold shadow; }
 .step-title { @apply font-semibold; }
 .step-text { @apply text-gray-600 dark:text-gray-300 mt-1; }
 
 /* FAQ */
-.faq { @apply rounded-xl border border-gray-200 dark:border-gray-700 p-5; }
+/* .faq { @apply rounded-xl border border-gray-200 dark:border-gray-700 p-5; }
 .faq-q { @apply font-medium; }
-.faq-a { @apply text-gray-600 dark:text-gray-300 mt-1; }
+.faq-a { @apply text-gray-600 dark:text-gray-300 mt-1; } */

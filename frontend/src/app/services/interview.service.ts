@@ -66,10 +66,11 @@ export class InterviewsService {
             );
     }
 
-    saveRoomNote(roomUuid: string, payload: Partial<Note>): Observable<Note> {
-        return this.http.post<Note>(
-            `${this.apiUrl}/notes/room/${roomUuid}/`,
-            payload,
+    updateRoomNote(roomUuid: string, payload: Partial<Note>): Observable<Note> {
+
+            return this.http.patch<Note>(
+            `${this.apiUrl}/interview-notes/note/${roomUuid}/`,
+                {content: JSON.stringify(payload),},
             { withCredentials: true }
         );
     }

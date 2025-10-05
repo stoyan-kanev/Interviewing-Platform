@@ -1,29 +1,29 @@
 /* ===== Shared UI (Home + About) ===== */
-.hero-bg {
+/* .hero-bg {
     @apply absolute inset-0 -z-10 bg-gradient-to-b
     from-indigo-600/15 via-sky-500/10 to-transparent
     dark:from-indigo-400/10 dark:via-sky-400/10;
-}
+} */
 
-.container-wrap { @apply container mx-auto px-4; }
-.section        { @apply container mx-auto px-4 py-14; }
+/* .container-wrap { @apply container mx-auto px-4; }
+.section        { @apply container mx-auto px-4 py-14; } */
 
 /* Cards / Tiles / Pills */
-.card {
+/* .card {
     @apply rounded-2xl border border-gray-200 dark:border-gray-700
     bg-white/70 dark:bg-gray-900/50 backdrop-blur
     p-6 shadow-sm hover:shadow-md transition;
-}
-.tile {
+} */
+/* .tile {
     @apply rounded-2xl border border-gray-200 dark:border-gray-700
     p-6 bg-white/70 dark:bg-gray-900/50 backdrop-blur;
-}
-.pill {
+} */
+/* .pill {
     @apply inline-flex items-center gap-2 px-3 py-2 rounded-full
     border border-gray-200 dark:border-gray-700
     bg-white/70 dark:bg-gray-900/40 text-sm;
-}
+} */
 
 /* Text helpers */
-.card-title { @apply font-semibold text-lg; }
-.card-text  { @apply text-gray-600 dark:text-gray-300 mt-1; }
+/* .card-title { @apply font-semibold text-lg; }
+.card-text  { @apply text-gray-600 dark:text-gray-300 mt-1; } */

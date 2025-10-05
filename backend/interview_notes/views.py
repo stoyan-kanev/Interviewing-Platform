@@ -82,37 +82,31 @@ class InterviewNoteCreateAPIView(APIView):
 
 class InterviewNoteUpdateAPIView(APIView):
     """
-    Update or delete a specific interview note
+    Update or delete a specific interview note by room_id (UUID)
     """
     permission_classes = [IsAuthenticated]
 
-    def get_object(self, pk, user):
-        """Helper method to get note object"""
+    def get_object(self, room_id, user):
+        """Helper method to get note object by room_id and interviewer"""
         try:
-            return InterviewNote.objects.get(pk=pk, interviewer=user)
+            return InterviewNote.objects.get(room_id=room_id, interviewer=user)
         except InterviewNote.DoesNotExist:
             return None
 
-    def get(self, request, pk):
-        """Get specific note by ID"""
-        note = self.get_object(pk, request.user)
+    def get(self, request, room_id):
+        """Get specific note by room_id"""
+        note = self.get_object(room_id, request.user)
         if note is None:
-            return Response(
-                {'detail': 'Note not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({'detail': 'Note not found'}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = InterviewNoteSerializer(note)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def put(self, request, pk):
-        """Update specific note by ID"""
-        note = self.get_object(pk, request.user)
+    def put(self, request, room_id):
+        """Update specific note by room_id"""
+        note = self.get_object(room_id, request.user)
         if note is None:
-            return Response(
-                {'detail': 'Note not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({'detail': 'Note not found'}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = InterviewNoteSerializer(note, data=request.data)
         if serializer.is_valid():
@@ -120,14 +114,11 @@ class InterviewNoteUpdateAPIView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def patch(self, request, pk):
-        """Partially update specific note by ID"""
-        note = self.get_object(pk, request.user)
+    def patch(self, request, room_id):
+        """Partially update specific note by room_id"""
+        note = self.get_object(room_id, request.user)
         if note is None:
-            return Response(
-                {'detail': 'Note not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({'detail': 'Note not found'}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = InterviewNoteSerializer(note, data=request.data, partial=True)
         if serializer.is_valid():
@@ -135,15 +126,11 @@ class InterviewNoteUpdateAPIView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, pk):
-        """Delete specific note by ID"""
-        note = self.get_object(pk, request.user)
+    def delete(self, request, room_id):
+        """Delete specific note by room_id"""
+        note = self.get_object(room_id, request.user)
         if note is None:
-            return Response(
-                {'detail': 'Note not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({'detail': 'Note not found'}, status=status.HTTP_404_NOT_FOUND)
 
         note.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-

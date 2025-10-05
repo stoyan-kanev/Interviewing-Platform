@@ -20,7 +20,7 @@ urlpatterns = [
          name='interview-notes-create'),
 
     # Update/delete specific note by ID
-    path('note/<int:pk>/',
+    path('note/<uuid:room_id>/',
          InterviewNoteUpdateAPIView.as_view(),
          name='interview-notes-update'),
 ]

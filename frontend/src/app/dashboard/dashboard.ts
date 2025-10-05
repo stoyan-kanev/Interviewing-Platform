@@ -6,6 +6,15 @@ import {RouterLink} from '@angular/router';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 
 
+interface InterviewNote {
+    id?: number;
+    room_id: string;
+    interviewer_id: number;
+    content: string;
+    timestamp: string;
+    interviewer_name?: string;
+    tags?: string[];
+}
 type NoteContent = {
     general?: string;
     technical?: string;
@@ -156,10 +165,9 @@ export class DashboardComponent {
     saveNotes() {
         if (!this.selectedRoom) return;
         if (this.notesForm.invalid) return;
-
         this.notesLoading = true;
         this.interviewServices
-            .saveRoomNote(this.selectedRoom.room_id, this.notesForm.value as Partial<Note>)
+            .updateRoomNote(this.selectedRoom.room_id, this.notesForm.value as Partial<InterviewNote>)
             .subscribe({
                 next: () => {
                     this.notesLoading = false;

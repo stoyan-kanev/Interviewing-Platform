@@ -432,11 +432,11 @@ io.on('connection', (socket) => {
 
 const localIP = getLocalIPAddress();
 const PORT = process.env.PORT || 8001;
-const HOST = process.env.HOST || '127.0.0.1';
+const HOST = process.env.HOST || '0.0.0.0';
 
 server.listen(PORT, HOST, () => {
     console.log(`🚀 WebSocket server running on:`);
-    console.log(`   - Local:   http://127.0.0.1:${PORT}`);
+    console.log(`   - Local:   http://0.0.0.0:${PORT}`);
     console.log(`   - Network: http://${localIP}:${PORT}`);
     console.log(`   - All interfaces: http://${HOST}:${PORT}`);
     console.log('');
